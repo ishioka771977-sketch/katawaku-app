@@ -1,0 +1,388 @@
+{
+  "project": {
+    "name": "宿野辺橋 地覆・壁高欄工事",
+    "contractor": "(株)石岡組",
+    "created_at": "2026-03-29",
+    "created_by": "くろたん"
+  },
+  "structure": {
+    "type": "parapet_curb_and_barrier",
+    "name": "宿野辺橋 地覆・壁高欄",
+    "casting_method": "separate",
+    "components": {
+      "curb": {
+        "type": "parapet_curb",
+        "profile": "L_shape",
+        "width_mm": 350,
+        "height_mm": 350,
+        "base_width_mm": 500,
+        "base_thickness_mm": 100,
+        "length_mm": 20000,
+        "finish": {
+          "road_side": "打放し",
+          "outer_side": "打放し",
+          "top": "コテ仕上げ"
+        },
+        "drain_pipe": {
+          "diameter_mm": 30,
+          "spacing_mm": 3000,
+          "slope_percent": 2
+        }
+      },
+      "barrier": {
+        "type": "wall_barrier",
+        "width_top_mm": 200,
+        "width_base_mm": 300,
+        "height_mm": 1000,
+        "taper": true,
+        "taper_start_height_mm": 200,
+        "length_mm": 20000,
+        "finish": {
+          "road_side": "打放し",
+          "outer_side": "打放し",
+          "top": "コテ仕上げ"
+        },
+        "expansion_joint_pitch_mm": 12000
+      }
+    },
+    "anchor_bolts": {
+      "diameter_mm": 20,
+      "pitch_mm": 2000,
+      "embedment_mm": 250,
+      "positions": [
+        { "x_mm": 1000 },
+        { "x_mm": 3000 },
+        { "x_mm": 5000 },
+        { "x_mm": 7000 },
+        { "x_mm": 9000 },
+        { "x_mm": 11000 },
+        { "x_mm": 13000 },
+        { "x_mm": 15000 },
+        { "x_mm": 17000 },
+        { "x_mm": 19000 }
+      ],
+      "note": "高欄支柱固定用。位置精度±5mm"
+    },
+    "joints": {
+      "expansion_joints": [
+        {
+          "position_mm": 10000,
+          "type": "伸縮目地",
+          "material": "瀝青質ボード",
+          "thickness_mm": 20,
+          "waterstop": {
+            "exists": true,
+            "type": "膨張止水材 CC200×5",
+            "position": "目地中央"
+          },
+          "sealant": {
+            "exists": true,
+            "type": "ポリウレタン系シーリング",
+            "depth_mm": 15,
+            "width_mm": 20
+          }
+        }
+      ],
+      "construction_joints": [
+        {
+          "position": "床版〜地覆打継",
+          "direction": "horizontal",
+          "treatment": "チッピング＋プライマー塗布",
+          "waterstop": {
+            "exists": true,
+            "type": "膨張止水材 CC200×5"
+          }
+        }
+      ],
+      "interval_mm": 10000,
+      "note": "パネルは目地位置で分割させない（端部処理）"
+    },
+    "cover": {
+      "road_side_mm": 40,
+      "outer_side_mm": 35,
+      "top_mm": 35
+    },
+    "construction_joint": {
+      "slab_to_curb": {
+        "type": "horizontal",
+        "treatment": "チッピング・レイタンス除去・湿潤"
+      },
+      "curb_to_barrier": {
+        "type": "horizontal",
+        "treatment": "チッピング・レイタンス除去・湿潤"
+      }
+    }
+  },
+  "phases": [
+    {
+      "phase": 1,
+      "name": "地覆打設",
+      "faces": [
+        {
+          "id": "CA",
+          "name": "地覆 外面（車道側）",
+          "face_type": "side",
+          "width_mm": 20000,
+          "height_mm": 400,
+          "finish": "打放し",
+          "layout_method": "片追い",
+          "panel_orientation": "横",
+          "panel_width_mm": 1800,
+          "panel_height_mm": 400,
+          "panels": [
+            { "id": "CA-1-01", "row": 1, "col": 1, "width_mm": 1800, "height_mm": 400, "type": "カット", "orientation": "横", "cut_note": "400mm幅にカット(900→400)" },
+            { "id": "CA-1-02", "row": 1, "col": 2, "width_mm": 1800, "height_mm": 400, "type": "カット", "orientation": "横" },
+            { "id": "CA-1-03", "row": 1, "col": 3, "width_mm": 1800, "height_mm": 400, "type": "カット", "orientation": "横" },
+            { "id": "CA-1-04", "row": 1, "col": 4, "width_mm": 1800, "height_mm": 400, "type": "カット", "orientation": "横" },
+            { "id": "CA-1-05", "row": 1, "col": 5, "width_mm": 1800, "height_mm": 400, "type": "カット", "orientation": "横" },
+            { "id": "CA-1-06", "row": 1, "col": 6, "width_mm": 1800, "height_mm": 400, "type": "カット", "orientation": "横" },
+            { "id": "CA-1-07", "row": 1, "col": 7, "width_mm": 1800, "height_mm": 400, "type": "カット", "orientation": "横" },
+            { "id": "CA-1-08", "row": 1, "col": 8, "width_mm": 1800, "height_mm": 400, "type": "カット", "orientation": "横" },
+            { "id": "CA-1-09", "row": 1, "col": 9, "width_mm": 1800, "height_mm": 400, "type": "カット", "orientation": "横" },
+            { "id": "CA-1-10", "row": 1, "col": 10, "width_mm": 1800, "height_mm": 400, "type": "カット", "orientation": "横" },
+            { "id": "CA-1-11", "row": 1, "col": 11, "width_mm": 1800, "height_mm": 400, "type": "カット", "orientation": "横" },
+            { "id": "CA-1-12", "row": 1, "col": 12, "width_mm": 200, "height_mm": 400, "type": "カット", "orientation": "横", "cut_note": "端数200mm" }
+          ],
+          "separators": {
+            "type": "C型",
+            "diameter": "2分5厘",
+            "pitch_h_mm": 600,
+            "pitch_v_mm": null,
+            "edge_margin_mm": 150,
+            "rows": 1,
+            "row_positions_mm": [200],
+            "length_mm": 350,
+            "wall_thickness_mm": 350,
+            "count": 34,
+            "note": "高さ400mm以下のため1段"
+          }
+        },
+        {
+          "id": "CB",
+          "name": "地覆 内面（外側）",
+          "face_type": "side",
+          "width_mm": 20000,
+          "height_mm": 400,
+          "finish": "打放し",
+          "layout_method": "片追い",
+          "panel_orientation": "横",
+          "panel_width_mm": 1800,
+          "panel_height_mm": 400,
+          "panels": [
+            { "id": "CB-1-01", "row": 1, "col": 1, "width_mm": 1800, "height_mm": 400, "type": "カット", "orientation": "横" },
+            { "id": "CB-1-02", "row": 1, "col": 2, "width_mm": 1800, "height_mm": 400, "type": "カット", "orientation": "横" },
+            { "id": "CB-1-03", "row": 1, "col": 3, "width_mm": 1800, "height_mm": 400, "type": "カット", "orientation": "横" },
+            { "id": "CB-1-04", "row": 1, "col": 4, "width_mm": 1800, "height_mm": 400, "type": "カット", "orientation": "横" },
+            { "id": "CB-1-05", "row": 1, "col": 5, "width_mm": 1800, "height_mm": 400, "type": "カット", "orientation": "横" },
+            { "id": "CB-1-06", "row": 1, "col": 6, "width_mm": 1800, "height_mm": 400, "type": "カット", "orientation": "横" },
+            { "id": "CB-1-07", "row": 1, "col": 7, "width_mm": 1800, "height_mm": 400, "type": "カット", "orientation": "横" },
+            { "id": "CB-1-08", "row": 1, "col": 8, "width_mm": 1800, "height_mm": 400, "type": "カット", "orientation": "横" },
+            { "id": "CB-1-09", "row": 1, "col": 9, "width_mm": 1800, "height_mm": 400, "type": "カット", "orientation": "横" },
+            { "id": "CB-1-10", "row": 1, "col": 10, "width_mm": 1800, "height_mm": 400, "type": "カット", "orientation": "横" },
+            { "id": "CB-1-11", "row": 1, "col": 11, "width_mm": 1800, "height_mm": 400, "type": "カット", "orientation": "横" },
+            { "id": "CB-1-12", "row": 1, "col": 12, "width_mm": 200, "height_mm": 400, "type": "カット", "orientation": "横", "cut_note": "端数200mm" }
+          ],
+          "separators": {
+            "type": "C型",
+            "diameter": "2分5厘",
+            "pitch_h_mm": 600,
+            "pitch_v_mm": null,
+            "edge_margin_mm": 150,
+            "rows": 1,
+            "row_positions_mm": [200],
+            "length_mm": 350,
+            "wall_thickness_mm": 350,
+            "count": 34,
+            "note": "高さ400mm以下のため1段"
+          }
+        },
+        {
+          "id": "CT",
+          "name": "地覆 天端",
+          "face_type": "top",
+          "width_mm": 20000,
+          "height_mm": 350,
+          "finish": "コテ仕上げ",
+          "note": "ABシース穴あり @2000mm",
+          "panels": [],
+          "separators": null
+        }
+      ]
+    },
+    {
+      "phase": 2,
+      "name": "壁高欄打設",
+      "faces": [
+        {
+          "id": "WA",
+          "name": "壁高欄 車道側",
+          "face_type": "side",
+          "width_mm": 20000,
+          "height_mm": 1050,
+          "finish": "打放し",
+          "layout_method": "片追い",
+          "panel_orientation": "縦",
+          "panel_width_mm": 900,
+          "panel_height_mm": 1050,
+          "panels": [
+            { "id": "WA-1-01", "row": 1, "col": 1, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦", "cut_note": "1050mm高にカット(1800→1050)" },
+            { "id": "WA-1-02", "row": 1, "col": 2, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WA-1-03", "row": 1, "col": 3, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WA-1-04", "row": 1, "col": 4, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WA-1-05", "row": 1, "col": 5, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WA-1-06", "row": 1, "col": 6, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WA-1-07", "row": 1, "col": 7, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WA-1-08", "row": 1, "col": 8, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WA-1-09", "row": 1, "col": 9, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WA-1-10", "row": 1, "col": 10, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WA-1-11", "row": 1, "col": 11, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WA-1-12", "row": 1, "col": 12, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WA-1-13", "row": 1, "col": 13, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WA-1-14", "row": 1, "col": 14, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WA-1-15", "row": 1, "col": 15, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WA-1-16", "row": 1, "col": 16, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WA-1-17", "row": 1, "col": 17, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WA-1-18", "row": 1, "col": 18, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WA-1-19", "row": 1, "col": 19, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WA-1-20", "row": 1, "col": 20, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WA-1-21", "row": 1, "col": 21, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WA-1-22", "row": 1, "col": 22, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WA-1-23", "row": 1, "col": 23, "width_mm": 200, "height_mm": 1050, "type": "カット", "orientation": "縦", "cut_note": "端数200mm" }
+          ],
+          "separators": {
+            "type": "B型",
+            "diameter": "2分5厘",
+            "pitch_h_mm": 450,
+            "pitch_v_mm": 350,
+            "edge_margin_mm": 150,
+            "rows": 3,
+            "row_positions_mm": [150, 500, 850],
+            "length_mm": 310,
+            "wall_thickness_mm": 250,
+            "p_con_size": "50φ",
+            "count": 132,
+            "note": "打放し面のためB型+Pコン使用"
+          },
+          "interference_check": {
+            "target": "anchor_bolts",
+            "min_clearance_mm": 50,
+            "note": "ABとセパの離隔を自動チェック。50mm未満は★警告"
+          }
+        },
+        {
+          "id": "WB",
+          "name": "壁高欄 外側",
+          "face_type": "side",
+          "width_mm": 20000,
+          "height_mm": 1050,
+          "finish": "打放し",
+          "layout_method": "片追い",
+          "panel_orientation": "縦",
+          "panel_width_mm": 900,
+          "panel_height_mm": 1050,
+          "panels": [
+            { "id": "WB-1-01", "row": 1, "col": 1, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WB-1-02", "row": 1, "col": 2, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WB-1-03", "row": 1, "col": 3, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WB-1-04", "row": 1, "col": 4, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WB-1-05", "row": 1, "col": 5, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WB-1-06", "row": 1, "col": 6, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WB-1-07", "row": 1, "col": 7, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WB-1-08", "row": 1, "col": 8, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WB-1-09", "row": 1, "col": 9, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WB-1-10", "row": 1, "col": 10, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WB-1-11", "row": 1, "col": 11, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WB-1-12", "row": 1, "col": 12, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WB-1-13", "row": 1, "col": 13, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WB-1-14", "row": 1, "col": 14, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WB-1-15", "row": 1, "col": 15, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WB-1-16", "row": 1, "col": 16, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WB-1-17", "row": 1, "col": 17, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WB-1-18", "row": 1, "col": 18, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WB-1-19", "row": 1, "col": 19, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WB-1-20", "row": 1, "col": 20, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WB-1-21", "row": 1, "col": 21, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WB-1-22", "row": 1, "col": 22, "width_mm": 900, "height_mm": 1050, "type": "カット", "orientation": "縦" },
+            { "id": "WB-1-23", "row": 1, "col": 23, "width_mm": 200, "height_mm": 1050, "type": "カット", "orientation": "縦", "cut_note": "端数200mm" }
+          ],
+          "separators": {
+            "type": "B型",
+            "diameter": "2分5厘",
+            "pitch_h_mm": 450,
+            "pitch_v_mm": 350,
+            "edge_margin_mm": 150,
+            "rows": 3,
+            "row_positions_mm": [150, 500, 850],
+            "length_mm": 310,
+            "wall_thickness_mm": 250,
+            "p_con_size": "50φ",
+            "count": 132,
+            "note": "打放し面のためB型+Pコン使用"
+          }
+        }
+      ]
+    }
+  ],
+  "quantities": {
+    "panels": {
+      "summary": [
+        { "face": "CA面(地覆外面)", "size": "400×1800", "type": "カット", "count": 11, "area_m2": 7.92 },
+        { "face": "CA面(端数)", "size": "400×200", "type": "カット", "count": 1, "area_m2": 0.08 },
+        { "face": "CB面(地覆内面)", "size": "400×1800", "type": "カット", "count": 11, "area_m2": 7.92 },
+        { "face": "CB面(端数)", "size": "400×200", "type": "カット", "count": 1, "area_m2": 0.08 },
+        { "face": "WA面(壁高欄車道側)", "size": "1050×900", "type": "カット", "count": 22, "area_m2": 20.79 },
+        { "face": "WA面(端数)", "size": "1050×200", "type": "カット", "count": 1, "area_m2": 0.21 },
+        { "face": "WB面(壁高欄外側)", "size": "1050×900", "type": "カット", "count": 22, "area_m2": 20.79 },
+        { "face": "WB面(端数)", "size": "1050×200", "type": "カット", "count": 1, "area_m2": 0.21 }
+      ],
+      "total_count": 70,
+      "total_area_m2": 58.00,
+      "note": "地覆はコンパネ端材を天端に転用可（900→400取りの残500→天端350に使用可）"
+    },
+    "separators": {
+      "summary": [
+        { "face": "CA面(地覆外面)", "type": "C型", "diameter": "2分5厘", "length_mm": 350, "count": 34 },
+        { "face": "CB面(地覆内面)", "type": "C型", "diameter": "2分5厘", "length_mm": 350, "count": 34 },
+        { "face": "WA面(壁高欄車道側)", "type": "B型", "diameter": "2分5厘", "length_mm": 310, "count": 132 },
+        { "face": "WB面(壁高欄外側)", "type": "B型", "diameter": "2分5厘", "length_mm": 310, "count": 132 }
+      ],
+      "total_count": 332
+    },
+    "hardware": {
+      "formtie": { "spec": "W5/16", "count": 664, "note": "全セパ×2" },
+      "p_con": { "spec": "50φ", "count": 528, "note": "B型セパ264本×2" },
+      "washer": { "spec": "W5/16用", "count": 664 },
+      "nut": { "spec": "W5/16六角", "count": 136, "note": "C型セパ68本×2" }
+    },
+    "misc": [
+      { "name": "桟木", "spec": "30×60×3600", "count": 40, "unit": "本" },
+      { "name": "端太角", "spec": "60×60×3000", "count": 30, "unit": "本" },
+      { "name": "面木", "spec": "15×15三角", "count": 80, "unit": "m" },
+      { "name": "剥離剤", "spec": "鉱物油系", "count": 2, "unit": "缶" },
+      { "name": "水抜きパイプ", "spec": "VP30", "count": 7, "unit": "本", "note": "@3m" },
+      { "name": "天端定規", "spec": "鋼製 L=2000", "count": 10, "unit": "本" },
+      { "name": "控え杭", "spec": "木杭 or 鋼管", "count": 20, "unit": "本" },
+      { "name": "アンカーボルト", "spec": "M20×250", "count": 10, "unit": "本", "note": "高欄支柱用" }
+    ],
+    "joints": {
+      "summary": [
+        { "name": "伸縮目地材", "spec": "瀝青質ボード t=20mm", "count": 1, "unit": "箇所", "note": "@10m・1箇所" },
+        { "name": "止水板", "spec": "膨張止水材 CC200×5", "length_m": 3.0, "count": 1, "unit": "箇所", "note": "1目地あたり断面周長分" },
+        { "name": "シーリング材", "spec": "ポリウレタン系 W20×D15", "length_m": 3.0, "count": 1, "unit": "箇所" },
+        { "name": "バックアップ材", "spec": "発泡ポリエチレン φ25", "length_m": 3.0, "count": 1, "unit": "箇所" }
+      ],
+      "total_joints": 1
+    }
+  },
+  "notes": [
+    { "category": "AB精度", "content": "高欄支柱アンカーボルトの位置精度は±5mm以内。コンクリート打設中のズレ防止策（上部を番線で固定、テンプレート使用）が必須" },
+    { "category": "AB-セパ干渉", "content": "ABとセパの離隔は最低50mm以上を確保。干渉する場合はセパ位置をずらすか、AB近傍のセパを省略し太径セパに変更" },
+    { "category": "打放し品質", "content": "壁高欄は走行車両から見える面。コンパネはケレン済みの新品or補修品を使用。剥離剤は均一に塗布。Pコン穴は防水モルタルで補修" },
+    { "category": "排水勾配", "content": "地覆天端には排水勾配（2%程度）を設ける。型枠orコテ仕上げで勾配を確保" },
+    { "category": "伸縮目地", "content": "壁高欄は橋軸方向に@10〜15mで伸縮目地を設ける。目地部にシーリング材充填。型枠は目地位置で切り離す" },
+    { "category": "テーパー", "content": "壁高欄にテーパー（基部300mm→天端200mm）がある場合、台形カットのコンパネが必要。精度が必要な場合は鋼製型枠を検討" },
+    { "category": "控え", "content": "壁高欄は高さ1m程度あるため控えが重要。単管パイプ斜め控え@1000〜1500mm。上部をチェーンor番線で開き止め" },
+    { "category": "端材転用", "content": "地覆外面のコンパネ（900→400カット）の端材500mmは、天端型枠（350mm幅）に転用可能。材料ロスを削減" },
+    { "category": "目地", "content": "伸縮目地@10m間隔。地覆と壁高欄の目地位置を一致させること。目地位置でパネルを分割しない。" }
+  ]
+}

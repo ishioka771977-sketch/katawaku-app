@@ -1,0 +1,286 @@
+{
+  "version": "3.0",
+  "project": {
+    "name": "宿野辺橋 床版工事",
+    "contractor": "（株）石岡組",
+    "created_at": "2026-03-29",
+    "created_by": "くろたん"
+  },
+  "structure": {
+    "type": "deck_slab",
+    "name": "宿野辺橋 床版",
+    "subtype": "composite_steel_deck",
+    "dimensions": {
+      "width_mm": 20500,
+      "length_mm": 33000,
+      "thickness_mm": 178,
+      "haunch_depth_mm": 50,
+      "haunch_width_mm": 200,
+      "camber_mm": 10
+    },
+    "girders": {
+      "count": 16,
+      "spacing_mm": 1340,
+      "labels": ["G-1","G-2","G-3","G-4","G-5","G-6","G-7","G-8",
+                 "G-9","G-10","G-11","G-12","G-13","G-14","G-15","G-16"]
+    },
+    "cover": {
+      "top_mm": 75,
+      "bottom_mm": 30
+    },
+    "base_plate": {
+      "exists": true,
+      "thickness_mm": 18,
+      "material": "SM490YB",
+      "note": "底鋼板が底型枠の役割。底型枠コンパネ不要"
+    },
+    "formwork_config": {
+      "bottom_form_required": false,
+      "side_form_required": true,
+      "haunch_form_required": true,
+      "shoring_required": false,
+      "shoring_note": "I形鋼＋底鋼板が支保工の役割"
+    },
+    "joints": {
+      "expansion_joints": [],
+      "construction_joints": [
+        {
+          "position": "打継ぎ（やむを得ない場合）",
+          "direction": "vertical",
+          "position_mm": 16500,
+          "treatment": "主桁上または1/4点付近",
+          "note": "原則打継ぎなし。やむを得ない場合のみ"
+        }
+      ],
+      "note": "連続打設が原則。打継ぎ位置は主桁上or1/4点"
+    }
+  },
+  "phases": [
+    {
+      "phase": 1,
+      "name": "床版打設",
+      "note": "打継ぎなしの連続打設が原則",
+      "faces": [
+        {
+          "id": "A",
+          "name": "橋軸方向端部（A1側・妻型枠）",
+          "face_type": "side",
+          "width_mm": 20500,
+          "height_mm": 230,
+          "finish": "埋設（地覆で隠れる）",
+          "layout_method": "片追い",
+          "panels": [
+            {"id":"A-1-01","row":1,"col":1,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"A-1-02","row":1,"col":2,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"A-1-03","row":1,"col":3,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"A-1-04","row":1,"col":4,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"A-1-05","row":1,"col":5,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"A-1-06","row":1,"col":6,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"A-1-07","row":1,"col":7,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"A-1-08","row":1,"col":8,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"A-1-09","row":1,"col":9,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"A-1-10","row":1,"col":10,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"A-1-11","row":1,"col":11,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"A-1-12","row":1,"col":12,"width_mm":700,"height_mm":230,"type":"カット","orientation":"横","cut_note":"700×230mmにカット"}
+          ],
+          "separators": {
+            "type": "C型",
+            "diameter": "2分5厘",
+            "pitch_h_mm": 600,
+            "pitch_v_mm": null,
+            "edge_margin_mm": 150,
+            "rows": 1,
+            "length_mm": 178,
+            "wall_thickness_mm": 178,
+            "count": 34,
+            "note": "版厚230mm以下のため1段のみ"
+          }
+        },
+        {
+          "id": "A'",
+          "name": "橋軸方向端部（A2側・妻型枠）",
+          "face_type": "side",
+          "width_mm": 20500,
+          "height_mm": 230,
+          "finish": "埋設（地覆で隠れる）",
+          "layout_method": "片追い",
+          "panels": [
+            {"id":"A'-1-01","row":1,"col":1,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"A'-1-02","row":1,"col":2,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"A'-1-03","row":1,"col":3,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"A'-1-04","row":1,"col":4,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"A'-1-05","row":1,"col":5,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"A'-1-06","row":1,"col":6,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"A'-1-07","row":1,"col":7,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"A'-1-08","row":1,"col":8,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"A'-1-09","row":1,"col":9,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"A'-1-10","row":1,"col":10,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"A'-1-11","row":1,"col":11,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"A'-1-12","row":1,"col":12,"width_mm":700,"height_mm":230,"type":"カット","orientation":"横","cut_note":"700×230mmにカット"}
+          ],
+          "separators": {
+            "type": "C型",
+            "diameter": "2分5厘",
+            "pitch_h_mm": 600,
+            "pitch_v_mm": null,
+            "edge_margin_mm": 150,
+            "rows": 1,
+            "length_mm": 178,
+            "wall_thickness_mm": 178,
+            "count": 34,
+            "note": "版厚230mm以下のため1段のみ"
+          }
+        },
+        {
+          "id": "B",
+          "name": "橋幅方向端部（上流側）",
+          "face_type": "side",
+          "width_mm": 33000,
+          "height_mm": 230,
+          "finish": "埋設",
+          "layout_method": "片追い",
+          "panels": [
+            {"id":"B-1-01","row":1,"col":1,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B-1-02","row":1,"col":2,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B-1-03","row":1,"col":3,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B-1-04","row":1,"col":4,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B-1-05","row":1,"col":5,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B-1-06","row":1,"col":6,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B-1-07","row":1,"col":7,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B-1-08","row":1,"col":8,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B-1-09","row":1,"col":9,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B-1-10","row":1,"col":10,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B-1-11","row":1,"col":11,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B-1-12","row":1,"col":12,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B-1-13","row":1,"col":13,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B-1-14","row":1,"col":14,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B-1-15","row":1,"col":15,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B-1-16","row":1,"col":16,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B-1-17","row":1,"col":17,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B-1-18","row":1,"col":18,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B-1-19","row":1,"col":19,"width_mm":600,"height_mm":230,"type":"カット","orientation":"横","cut_note":"600×230mmにカット"}
+          ],
+          "separators": {
+            "type": "C型",
+            "diameter": "2分5厘",
+            "pitch_h_mm": 600,
+            "pitch_v_mm": null,
+            "edge_margin_mm": 150,
+            "rows": 1,
+            "length_mm": 178,
+            "wall_thickness_mm": 178,
+            "count": 55,
+            "note": "版厚230mm以下のため1段のみ"
+          }
+        },
+        {
+          "id": "B'",
+          "name": "橋幅方向端部（下流側）",
+          "face_type": "side",
+          "width_mm": 33000,
+          "height_mm": 230,
+          "finish": "埋設",
+          "layout_method": "片追い",
+          "panels": [
+            {"id":"B'-1-01","row":1,"col":1,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B'-1-02","row":1,"col":2,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B'-1-03","row":1,"col":3,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B'-1-04","row":1,"col":4,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B'-1-05","row":1,"col":5,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B'-1-06","row":1,"col":6,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B'-1-07","row":1,"col":7,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B'-1-08","row":1,"col":8,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B'-1-09","row":1,"col":9,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B'-1-10","row":1,"col":10,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B'-1-11","row":1,"col":11,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B'-1-12","row":1,"col":12,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B'-1-13","row":1,"col":13,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B'-1-14","row":1,"col":14,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B'-1-15","row":1,"col":15,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B'-1-16","row":1,"col":16,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B'-1-17","row":1,"col":17,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B'-1-18","row":1,"col":18,"width_mm":1800,"height_mm":230,"type":"カット","orientation":"横","cut_note":"230mm幅にカット"},
+            {"id":"B'-1-19","row":1,"col":19,"width_mm":600,"height_mm":230,"type":"カット","orientation":"横","cut_note":"600×230mmにカット"}
+          ],
+          "separators": {
+            "type": "C型",
+            "diameter": "2分5厘",
+            "pitch_h_mm": 600,
+            "pitch_v_mm": null,
+            "edge_margin_mm": 150,
+            "rows": 1,
+            "length_mm": 178,
+            "wall_thickness_mm": 178,
+            "count": 55,
+            "note": "版厚230mm以下のため1段のみ"
+          }
+        },
+        {
+          "id": "H",
+          "name": "ハンチ部（主桁取合い）",
+          "face_type": "haunch",
+          "note": "主桁上フランジとの取合い。角度カット合板",
+          "haunch_depth_mm": 50,
+          "haunch_width_mm": 200,
+          "girder_count": 16,
+          "panels_per_girder": 2,
+          "total_panels": 32,
+          "panel_note": "三角形にカットした合板。主桁1本につき左右2枚"
+        }
+      ]
+    }
+  ],
+  "quantities": {
+    "panels": {
+      "summary": [
+        {"face":"A面","size":"1800×230","type":"カット","count":11,"area_m2":4.55},
+        {"face":"A面","size":"700×230","type":"カット","count":1,"area_m2":0.16},
+        {"face":"A'面","size":"1800×230","type":"カット","count":11,"area_m2":4.55},
+        {"face":"A'面","size":"700×230","type":"カット","count":1,"area_m2":0.16},
+        {"face":"B面","size":"1800×230","type":"カット","count":18,"area_m2":7.45},
+        {"face":"B面","size":"600×230","type":"カット","count":1,"area_m2":0.14},
+        {"face":"B'面","size":"1800×230","type":"カット","count":18,"area_m2":7.45},
+        {"face":"B'面","size":"600×230","type":"カット","count":1,"area_m2":0.14},
+        {"face":"ハンチ","size":"加工材","type":"カット","count":32,"area_m2":null}
+      ],
+      "total_count": 94,
+      "total_area_m2": 24.60,
+      "note": "全てカット材（230mm幅にカット）。コンパネ原板(900×1800)換算: 約16枚"
+    },
+    "separators": {
+      "summary": [
+        {"face":"A面","type":"C型","diameter":"2分5厘","length_mm":178,"count":34},
+        {"face":"A'面","type":"C型","diameter":"2分5厘","length_mm":178,"count":34},
+        {"face":"B面","type":"C型","diameter":"2分5厘","length_mm":178,"count":55},
+        {"face":"B'面","type":"C型","diameter":"2分5厘","length_mm":178,"count":55}
+      ],
+      "total_count": 178
+    },
+    "hardware": {
+      "formtie": {"spec":"W5/16","count":356,"note":"セパ×2"},
+      "nut": {"spec":"W5/16六角","count":356,"note":"C型セパ×2"},
+      "washer": {"spec":"W5/16用","count":356,"note":"フォームタイと同数"}
+    },
+    "joints": {
+      "summary": [
+        { "name": "打継ぎ処理", "spec": "レイタンス除去・チッピング・湿潤", "count": 0, "unit": "箇所", "note": "連続打設が原則" }
+      ],
+      "total_joints": 0
+    },
+    "misc": [
+      {"name":"桟木","spec":"30×60×3600","count":30,"unit":"本"},
+      {"name":"面木","spec":"15×15三角","count":60,"unit":"m"},
+      {"name":"剥離剤","spec":"鉱物油系","count":1,"unit":"缶"},
+      {"name":"布テープ","spec":"50mm幅","count":5,"unit":"巻"},
+      {"name":"スペーサー","spec":"かぶり75mm用","count":200,"unit":"個"}
+    ]
+  },
+  "notes": [
+    {"category":"かぶり","content":"上面: 75mm、下面: 30mm（底鋼板側）。スペーサーは1m²あたり4個以上"},
+    {"category":"打継ぎ","content":"原則として打継ぎなしの連続打設。やむを得ない場合は主桁上または1/4点付近"},
+    {"category":"ハンチ","content":"主桁上フランジとの取合い部。角度カット合板で傾斜面を形成。隙間はテープで塞ぐ"},
+    {"category":"水抜き","content":"底型枠（通常床版の場合）の低い位置にブリーディング水排出口を設ける"},
+    {"category":"上げ越し","content":"底型枠に上げ越し（キャンバー）10mmを設定。支保工ジャッキで微調整"},
+    {"category":"宿野辺橋固有","content":"底鋼板t=18mm（SM490YB）が底型枠の役割。I形鋼が支保工の役割。底型枠コンパネ・パイプサポートは不要"}
+  ]
+}

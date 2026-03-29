@@ -1,0 +1,270 @@
+{
+  "project": {
+    "name": "○○工事 フーチングF1",
+    "contractor": "(株)石岡組",
+    "created_at": "2026-03-29",
+    "created_by": "コドたん"
+  },
+  "structure": {
+    "type": "foundation",
+    "subtype": "footing",
+    "name": "フーチング F1",
+    "dimensions": {
+      "width_mm": 4000,
+      "length_mm": 6000,
+      "height_mm": 1500
+    },
+    "corner_detail": {
+      "large_faces": ["A", "C"],
+      "small_faces": ["B", "D"],
+      "note": "A面・C面が大面（コーナーで相手面のコンパネ厚12mm分延長）"
+    },
+    "sepa_feasibility": {
+      "width_4000": "対面セパ可（幅4m以下）",
+      "length_6000": "対面セパ可（長尺注意 4〜6m）"
+    },
+    "cover": {
+      "bottom_soil_mm": 70,
+      "side_soil_mm": 70,
+      "top_mm": 50
+    },
+    "leveling_concrete": {
+      "thickness_mm": 50,
+      "note": "均しコンクリート t=50mm"
+    },
+    "joints": {
+      "expansion_joints": [],
+      "construction_joints": [
+        {
+          "position": "フーチング天端→上部工",
+          "direction": "horizontal",
+          "treatment": "レイタンス除去・チッピング・目粗し",
+          "note": "上部構造との打継ぎ"
+        }
+      ],
+      "note": "基礎は単体構造のため伸縮目地なし。上部工との打継目地のみ。"
+    }
+  },
+  "phases": [
+    {
+      "phase": 1,
+      "name": "フーチング打設",
+      "faces": [
+        {
+          "id": "A",
+          "name": "長辺面（大面）",
+          "face_type": "side",
+          "width_mm": 6000,
+          "height_mm": 1500,
+          "is_large_face": true,
+          "type": "側型枠",
+          "panel_orientation": "横",
+          "panel_width_mm": 1800,
+          "panel_height_mm": 900,
+          "layout_method": "左詰め・端部カット調整",
+          "finish": "一般",
+          "separators": {
+            "type": "C型",
+            "diameter": "2分5厘",
+            "pitch_h_mm": 600,
+            "pitch_v_mm": 450,
+            "edge_margin_mm": 150,
+            "rows": 2,
+            "row_positions_mm": [450, 1050],
+            "length_mm": 4024,
+            "count": 20,
+            "note": "セパ長=幅4000+コンパネ12mm×2=4024mm"
+          },
+          "panels": [
+            { "id": "A-1-1", "row": 1, "col": 1, "width_mm": 900, "height_mm": 900, "type": "定尺", "orientation": "横" },
+            { "id": "A-1-2", "row": 1, "col": 2, "width_mm": 900, "height_mm": 900, "type": "定尺", "orientation": "横" },
+            { "id": "A-1-3", "row": 1, "col": 3, "width_mm": 900, "height_mm": 900, "type": "定尺", "orientation": "横" },
+            { "id": "A-1-4", "row": 1, "col": 4, "width_mm": 900, "height_mm": 900, "type": "定尺", "orientation": "横" },
+            { "id": "A-1-5", "row": 1, "col": 5, "width_mm": 900, "height_mm": 900, "type": "定尺", "orientation": "横" },
+            { "id": "A-1-6", "row": 1, "col": 6, "width_mm": 900, "height_mm": 900, "type": "定尺", "orientation": "横" },
+            { "id": "A-1-7", "row": 1, "col": 7, "width_mm": 600, "height_mm": 900, "type": "カット", "orientation": "横" },
+            { "id": "A-2-1", "row": 2, "col": 1, "width_mm": 900, "height_mm": 600, "type": "カット", "orientation": "横" },
+            { "id": "A-2-2", "row": 2, "col": 2, "width_mm": 900, "height_mm": 600, "type": "カット", "orientation": "横" },
+            { "id": "A-2-3", "row": 2, "col": 3, "width_mm": 900, "height_mm": 600, "type": "カット", "orientation": "横" },
+            { "id": "A-2-4", "row": 2, "col": 4, "width_mm": 900, "height_mm": 600, "type": "カット", "orientation": "横" },
+            { "id": "A-2-5", "row": 2, "col": 5, "width_mm": 900, "height_mm": 600, "type": "カット", "orientation": "横" },
+            { "id": "A-2-6", "row": 2, "col": 6, "width_mm": 900, "height_mm": 600, "type": "カット", "orientation": "横" },
+            { "id": "A-2-7", "row": 2, "col": 7, "width_mm": 600, "height_mm": 600, "type": "カット", "orientation": "横" }
+          ]
+        },
+        {
+          "id": "B",
+          "name": "長辺面（小面）",
+          "face_type": "side",
+          "width_mm": 6000,
+          "height_mm": 1500,
+          "is_large_face": false,
+          "type": "側型枠",
+          "panel_orientation": "横",
+          "panel_width_mm": 1800,
+          "panel_height_mm": 900,
+          "layout_method": "左詰め・端部カット調整",
+          "finish": "一般",
+          "separators": {
+            "type": "C型",
+            "diameter": "2分5厘",
+            "pitch_h_mm": 600,
+            "pitch_v_mm": 450,
+            "edge_margin_mm": 150,
+            "rows": 2,
+            "row_positions_mm": [450, 1050],
+            "length_mm": 4024,
+            "count": 20,
+            "note": "セパ長=幅4000+コンパネ12mm×2=4024mm"
+          },
+          "panels": [
+            { "id": "B-1-1", "row": 1, "col": 1, "width_mm": 900, "height_mm": 900, "type": "定尺", "orientation": "横" },
+            { "id": "B-1-2", "row": 1, "col": 2, "width_mm": 900, "height_mm": 900, "type": "定尺", "orientation": "横" },
+            { "id": "B-1-3", "row": 1, "col": 3, "width_mm": 900, "height_mm": 900, "type": "定尺", "orientation": "横" },
+            { "id": "B-1-4", "row": 1, "col": 4, "width_mm": 900, "height_mm": 900, "type": "定尺", "orientation": "横" },
+            { "id": "B-1-5", "row": 1, "col": 5, "width_mm": 900, "height_mm": 900, "type": "定尺", "orientation": "横" },
+            { "id": "B-1-6", "row": 1, "col": 6, "width_mm": 900, "height_mm": 900, "type": "定尺", "orientation": "横" },
+            { "id": "B-1-7", "row": 1, "col": 7, "width_mm": 600, "height_mm": 900, "type": "カット", "orientation": "横" },
+            { "id": "B-2-1", "row": 2, "col": 1, "width_mm": 900, "height_mm": 600, "type": "カット", "orientation": "横" },
+            { "id": "B-2-2", "row": 2, "col": 2, "width_mm": 900, "height_mm": 600, "type": "カット", "orientation": "横" },
+            { "id": "B-2-3", "row": 2, "col": 3, "width_mm": 900, "height_mm": 600, "type": "カット", "orientation": "横" },
+            { "id": "B-2-4", "row": 2, "col": 4, "width_mm": 900, "height_mm": 600, "type": "カット", "orientation": "横" },
+            { "id": "B-2-5", "row": 2, "col": 5, "width_mm": 900, "height_mm": 600, "type": "カット", "orientation": "横" },
+            { "id": "B-2-6", "row": 2, "col": 6, "width_mm": 900, "height_mm": 600, "type": "カット", "orientation": "横" },
+            { "id": "B-2-7", "row": 2, "col": 7, "width_mm": 600, "height_mm": 600, "type": "カット", "orientation": "横" }
+          ]
+        },
+        {
+          "id": "C",
+          "name": "短辺面（大面）",
+          "face_type": "side",
+          "width_mm": 4000,
+          "height_mm": 1500,
+          "is_large_face": true,
+          "type": "側型枠",
+          "panel_orientation": "横",
+          "panel_width_mm": 1800,
+          "panel_height_mm": 900,
+          "layout_method": "左詰め・端部カット調整",
+          "finish": "一般",
+          "separators": {
+            "type": "C型",
+            "diameter": "2分5厘",
+            "pitch_h_mm": 600,
+            "pitch_v_mm": 450,
+            "edge_margin_mm": 150,
+            "rows": 2,
+            "row_positions_mm": [450, 1050],
+            "length_mm": 6024,
+            "count": 14,
+            "note": "セパ長=長さ6000+コンパネ12mm×2=6024mm。長尺セパ注意"
+          },
+          "panels": [
+            { "id": "C-1-1", "row": 1, "col": 1, "width_mm": 900, "height_mm": 900, "type": "定尺", "orientation": "横" },
+            { "id": "C-1-2", "row": 1, "col": 2, "width_mm": 900, "height_mm": 900, "type": "定尺", "orientation": "横" },
+            { "id": "C-1-3", "row": 1, "col": 3, "width_mm": 900, "height_mm": 900, "type": "定尺", "orientation": "横" },
+            { "id": "C-1-4", "row": 1, "col": 4, "width_mm": 900, "height_mm": 900, "type": "定尺", "orientation": "横" },
+            { "id": "C-1-5", "row": 1, "col": 5, "width_mm": 400, "height_mm": 900, "type": "カット", "orientation": "横" },
+            { "id": "C-2-1", "row": 2, "col": 1, "width_mm": 900, "height_mm": 600, "type": "カット", "orientation": "横" },
+            { "id": "C-2-2", "row": 2, "col": 2, "width_mm": 900, "height_mm": 600, "type": "カット", "orientation": "横" },
+            { "id": "C-2-3", "row": 2, "col": 3, "width_mm": 900, "height_mm": 600, "type": "カット", "orientation": "横" },
+            { "id": "C-2-4", "row": 2, "col": 4, "width_mm": 900, "height_mm": 600, "type": "カット", "orientation": "横" },
+            { "id": "C-2-5", "row": 2, "col": 5, "width_mm": 400, "height_mm": 600, "type": "カット", "orientation": "横" }
+          ]
+        },
+        {
+          "id": "D",
+          "name": "短辺面（小面）",
+          "face_type": "side",
+          "width_mm": 4000,
+          "height_mm": 1500,
+          "is_large_face": false,
+          "type": "側型枠",
+          "panel_orientation": "横",
+          "panel_width_mm": 1800,
+          "panel_height_mm": 900,
+          "layout_method": "左詰め・端部カット調整",
+          "finish": "一般",
+          "separators": {
+            "type": "C型",
+            "diameter": "2分5厘",
+            "pitch_h_mm": 600,
+            "pitch_v_mm": 450,
+            "edge_margin_mm": 150,
+            "rows": 2,
+            "row_positions_mm": [450, 1050],
+            "length_mm": 6024,
+            "count": 14,
+            "note": "セパ長=長さ6000+コンパネ12mm×2=6024mm。長尺セパ注意"
+          },
+          "panels": [
+            { "id": "D-1-1", "row": 1, "col": 1, "width_mm": 900, "height_mm": 900, "type": "定尺", "orientation": "横" },
+            { "id": "D-1-2", "row": 1, "col": 2, "width_mm": 900, "height_mm": 900, "type": "定尺", "orientation": "横" },
+            { "id": "D-1-3", "row": 1, "col": 3, "width_mm": 900, "height_mm": 900, "type": "定尺", "orientation": "横" },
+            { "id": "D-1-4", "row": 1, "col": 4, "width_mm": 900, "height_mm": 900, "type": "定尺", "orientation": "横" },
+            { "id": "D-1-5", "row": 1, "col": 5, "width_mm": 400, "height_mm": 900, "type": "カット", "orientation": "横" },
+            { "id": "D-2-1", "row": 2, "col": 1, "width_mm": 900, "height_mm": 600, "type": "カット", "orientation": "横" },
+            { "id": "D-2-2", "row": 2, "col": 2, "width_mm": 900, "height_mm": 600, "type": "カット", "orientation": "横" },
+            { "id": "D-2-3", "row": 2, "col": 3, "width_mm": 900, "height_mm": 600, "type": "カット", "orientation": "横" },
+            { "id": "D-2-4", "row": 2, "col": 4, "width_mm": 900, "height_mm": 600, "type": "カット", "orientation": "横" },
+            { "id": "D-2-5", "row": 2, "col": 5, "width_mm": 400, "height_mm": 600, "type": "カット", "orientation": "横" }
+          ]
+        }
+      ]
+    }
+  ],
+  "quantities": {
+    "panels": {
+      "summary": [
+        { "face": "A面", "size": "900×900", "type": "定尺", "count": 6, "area_m2": 4.86 },
+        { "face": "A面", "size": "600×900", "type": "カット", "count": 1, "area_m2": 0.54 },
+        { "face": "A面", "size": "900×600", "type": "カット", "count": 6, "area_m2": 3.24 },
+        { "face": "A面", "size": "600×600", "type": "カット", "count": 1, "area_m2": 0.36 },
+        { "face": "B面", "size": "900×900", "type": "定尺", "count": 6, "area_m2": 4.86 },
+        { "face": "B面", "size": "600×900", "type": "カット", "count": 1, "area_m2": 0.54 },
+        { "face": "B面", "size": "900×600", "type": "カット", "count": 6, "area_m2": 3.24 },
+        { "face": "B面", "size": "600×600", "type": "カット", "count": 1, "area_m2": 0.36 },
+        { "face": "C面", "size": "900×900", "type": "定尺", "count": 4, "area_m2": 3.24 },
+        { "face": "C面", "size": "400×900", "type": "カット", "count": 1, "area_m2": 0.36 },
+        { "face": "C面", "size": "900×600", "type": "カット", "count": 4, "area_m2": 2.16 },
+        { "face": "C面", "size": "400×600", "type": "カット", "count": 1, "area_m2": 0.24 },
+        { "face": "D面", "size": "900×900", "type": "定尺", "count": 4, "area_m2": 3.24 },
+        { "face": "D面", "size": "400×900", "type": "カット", "count": 1, "area_m2": 0.36 },
+        { "face": "D面", "size": "900×600", "type": "カット", "count": 4, "area_m2": 2.16 },
+        { "face": "D面", "size": "400×600", "type": "カット", "count": 1, "area_m2": 0.24 }
+      ],
+      "total_count": 48,
+      "total_area_m2": 29.46
+    },
+    "separators": {
+      "summary": [
+        { "face": "A面", "type": "C型", "diameter": "2分5厘", "length_mm": 4024, "count": 20 },
+        { "face": "B面", "type": "C型", "diameter": "2分5厘", "length_mm": 4024, "count": 20 },
+        { "face": "C面", "type": "C型", "diameter": "2分5厘", "length_mm": 6024, "count": 14 },
+        { "face": "D面", "type": "C型", "diameter": "2分5厘", "length_mm": 6024, "count": 14 }
+      ],
+      "total_count": 68,
+      "note": "A-B間セパ（幅方向4024mm）とC-D間セパ（長さ方向6024mm）は突き通し。長さ方向は長尺セパにつき座屈注意。"
+    },
+    "form_ties": {
+      "total_count": 68,
+      "note": "フォームタイ = セパレーターと同数"
+    },
+    "joints": {
+      "summary": [
+        { "name": "打継ぎ処理", "spec": "レイタンス除去・チッピング", "count": 1, "unit": "箇所", "note": "フーチング天端" }
+      ],
+      "total_joints": 0
+    },
+    "total_formwork_area_m2": 30.00,
+    "note": "型枠面積: A面9.0m2×2 + C面6.0m2×2 = 30.0m2"
+  },
+  "notes": [
+    { "category": "コーナー納まり", "content": "A面・C面が大面（長辺側）。コーナーではA面・C面のコンパネが相手面（B面・D面）のコンパネ端部を覆うように12mm延長。小面（B面・D面）は大面の内側に納める。" },
+    { "category": "根巻き", "content": "型枠下端と均しコンクリートの隙間にモルタルを詰めてノロ漏れ防止。根巻き高さ30〜50mm程度。" },
+    { "category": "セパレーター", "content": "全面C型セパレーター対面突き通し方式。幅方向（4m）は問題なし。長さ方向（6m）は長尺セパにつき座屈リスクあり、中間サポートまたは3分セパへの太径化を検討。" },
+    { "category": "セパ判定基準", "content": "幅4m以下:対面セパOK / 4〜6m:長尺注意（座屈リスク） / 6m超:控え杭方式推奨" },
+    { "category": "均しコンクリート", "content": "フーチング底面は均しコンクリート（t=50mm）上に型枠設置。底型枠は不要。" },
+    { "category": "かぶり", "content": "側面（土に接する）70mm、底面（土に接する）70mm、上面50mm。スペーサーで確保。" }
+  ]
+}

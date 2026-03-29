@@ -1,0 +1,395 @@
+{
+  "project": {
+    "name": "○○工事 BOXカルバート No.1",
+    "contractor": "(株)石岡組",
+    "created_at": "2026-03-29",
+    "created_by": "コドたん"
+  },
+  "structure": {
+    "type": "box_culvert",
+    "subtype": "single",
+    "name": "BOXカルバート No.1",
+    "dimensions": {
+      "inner_width_mm": 3000,
+      "inner_height_mm": 3000,
+      "top_slab_thickness_mm": 400,
+      "bottom_slab_thickness_mm": 500,
+      "wall_thickness_mm": 400,
+      "haunch_size_mm": 200,
+      "span_length_mm": 10000,
+      "span_count": 1
+    },
+    "casting_method": "2回打設",
+    "cover": {
+      "soil_contact_mm": 70,
+      "water_contact_mm": 40
+    },
+    "construction_joint": {
+      "base_to_wall": {
+        "waterstop": true,
+        "type": "PVC_CC200"
+      },
+      "expansion_joint": {
+        "interval_mm": 10000,
+        "material": "20mm_filler",
+        "waterstop": "center_bulb"
+      }
+    },
+    "joints": {
+      "expansion_joints": [],
+      "construction_joints": [
+        {
+          "position": "底版→壁",
+          "direction": "horizontal",
+          "treatment": "レイタンス除去・チッピング",
+          "waterstop": { "exists": true, "type": "PVC止水板 CC200" }
+        }
+      ],
+      "expansion_joint_interval_mm": 10000,
+      "expansion_joint_material": "瀝青質ボード t=20mm",
+      "note": "BOXカルバートは目地間隔@10m。止水板はPVC_CC200。"
+    },
+    "shoring": {
+      "top_slab": {
+        "type": "pipe_support",
+        "spacing_mm": 900,
+        "girder": "90x90_timber",
+        "joist": "45x90_timber @300",
+        "joist_spacing_mm": 300
+      }
+    }
+  },
+  "phases": [
+    {
+      "phase": 1,
+      "name": "底版",
+      "faces": [
+        {
+          "id": "BL", "name": "底版左側面", "face_type": "side",
+          "width_mm": 10000, "height_mm": 550,
+          "type": "側型枠",
+          "panel_orientation": "横", "panel_width_mm": 1800, "panel_height_mm": 900,
+          "layout_method": "横使い（900mm横転）",
+          "separators": null,
+          "support": { "type": "控え杭", "spec": "木杭＋ステー" },
+          "panels": [
+            {"id":"BL-01","row":1,"col":1,"width_mm":1800,"height_mm":550,"type":"カット","orientation":"横","cut_note":"高さ550mmカット"},
+            {"id":"BL-02","row":1,"col":2,"width_mm":1800,"height_mm":550,"type":"カット","orientation":"横"},
+            {"id":"BL-03","row":1,"col":3,"width_mm":1800,"height_mm":550,"type":"カット","orientation":"横"},
+            {"id":"BL-04","row":1,"col":4,"width_mm":1800,"height_mm":550,"type":"カット","orientation":"横"},
+            {"id":"BL-05","row":1,"col":5,"width_mm":1800,"height_mm":550,"type":"カット","orientation":"横"},
+            {"id":"BL-06","row":1,"col":6,"width_mm":1000,"height_mm":550,"type":"カット","orientation":"横","cut_note":"幅1000mmカット"}
+          ]
+        },
+        {
+          "id": "BR", "name": "底版右側面", "face_type": "side",
+          "width_mm": 10000, "height_mm": 550,
+          "type": "側型枠",
+          "panel_orientation": "横", "panel_width_mm": 1800, "panel_height_mm": 900,
+          "layout_method": "横使い（900mm横転）",
+          "separators": null,
+          "support": { "type": "控え杭", "spec": "木杭＋ステー" },
+          "panels": [
+            {"id":"BR-01","row":1,"col":1,"width_mm":1800,"height_mm":550,"type":"カット","orientation":"横"},
+            {"id":"BR-02","row":1,"col":2,"width_mm":1800,"height_mm":550,"type":"カット","orientation":"横"},
+            {"id":"BR-03","row":1,"col":3,"width_mm":1800,"height_mm":550,"type":"カット","orientation":"横"},
+            {"id":"BR-04","row":1,"col":4,"width_mm":1800,"height_mm":550,"type":"カット","orientation":"横"},
+            {"id":"BR-05","row":1,"col":5,"width_mm":1800,"height_mm":550,"type":"カット","orientation":"横"},
+            {"id":"BR-06","row":1,"col":6,"width_mm":1000,"height_mm":550,"type":"カット","orientation":"横"}
+          ]
+        }
+      ]
+    },
+    {
+      "phase": 2,
+      "name": "側壁＋頂版",
+      "faces": [
+        {
+          "id": "A", "name": "左側壁 外面", "face_type": "side",
+          "width_mm": 10000, "height_mm": 3900,
+          "type": "側型枠",
+          "panel_orientation": "縦", "panel_width_mm": 900, "panel_height_mm": 1800,
+          "layout_method": "縦使い2段＋端数",
+          "finish": "一般仕上げ",
+          "separators": {
+            "type": "C型", "diameter": "2分5厘",
+            "pitch_h_mm": 450, "pitch_v_mm": 450,
+            "edge_margin_mm": 225,
+            "rows": 8,
+            "row_positions_mm": [225, 675, 1125, 1575, 2025, 2475, 2925, 3375],
+            "length_mm": 400,
+            "count": 176
+          },
+          "panels": [
+            {"id":"A-1-01","row":1,"col":1,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"A-1-02","row":1,"col":2,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"A-1-03","row":1,"col":3,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"A-1-04","row":1,"col":4,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"A-1-05","row":1,"col":5,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"A-1-06","row":1,"col":6,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"A-1-07","row":1,"col":7,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"A-1-08","row":1,"col":8,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"A-1-09","row":1,"col":9,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"A-1-10","row":1,"col":10,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"A-1-11","row":1,"col":11,"width_mm":1000,"height_mm":1800,"type":"カット","orientation":"縦","cut_note":"幅1000mmカット"},
+            {"id":"A-2-01","row":2,"col":1,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"A-2-02","row":2,"col":2,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"A-2-03","row":2,"col":3,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"A-2-04","row":2,"col":4,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"A-2-05","row":2,"col":5,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"A-2-06","row":2,"col":6,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"A-2-07","row":2,"col":7,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"A-2-08","row":2,"col":8,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"A-2-09","row":2,"col":9,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"A-2-10","row":2,"col":10,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"A-2-11","row":2,"col":11,"width_mm":1000,"height_mm":1800,"type":"カット","orientation":"縦"},
+            {"id":"A-3-01","row":3,"col":1,"width_mm":900,"height_mm":300,"type":"カット","orientation":"横","cut_note":"高さ300mmカット"},
+            {"id":"A-3-02","row":3,"col":2,"width_mm":900,"height_mm":300,"type":"カット","orientation":"横"},
+            {"id":"A-3-03","row":3,"col":3,"width_mm":900,"height_mm":300,"type":"カット","orientation":"横"},
+            {"id":"A-3-04","row":3,"col":4,"width_mm":900,"height_mm":300,"type":"カット","orientation":"横"},
+            {"id":"A-3-05","row":3,"col":5,"width_mm":900,"height_mm":300,"type":"カット","orientation":"横"},
+            {"id":"A-3-06","row":3,"col":6,"width_mm":900,"height_mm":300,"type":"カット","orientation":"横"},
+            {"id":"A-3-07","row":3,"col":7,"width_mm":900,"height_mm":300,"type":"カット","orientation":"横"},
+            {"id":"A-3-08","row":3,"col":8,"width_mm":900,"height_mm":300,"type":"カット","orientation":"横"},
+            {"id":"A-3-09","row":3,"col":9,"width_mm":900,"height_mm":300,"type":"カット","orientation":"横"},
+            {"id":"A-3-10","row":3,"col":10,"width_mm":900,"height_mm":300,"type":"カット","orientation":"横"},
+            {"id":"A-3-11","row":3,"col":11,"width_mm":1000,"height_mm":300,"type":"カット","orientation":"横"}
+          ]
+        },
+        {
+          "id": "B", "name": "左側壁 内面", "face_type": "side",
+          "width_mm": 10000, "height_mm": 3000,
+          "type": "側型枠",
+          "panel_orientation": "縦", "panel_width_mm": 900, "panel_height_mm": 1800,
+          "layout_method": "縦使い1段＋端数",
+          "finish": "水路仕上げ面",
+          "separators": {
+            "type": "B型", "diameter": "2分5厘",
+            "pitch_h_mm": 450, "pitch_v_mm": 450,
+            "edge_margin_mm": 225,
+            "rows": 6,
+            "row_positions_mm": [225, 675, 1125, 1575, 2025, 2475],
+            "length_mm": 400,
+            "count": 132,
+            "note": "内空面（水路仕上げ面）のためB型＋Pコン使用"
+          },
+          "panels": [
+            {"id":"B-1-01","row":1,"col":1,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"B-1-02","row":1,"col":2,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"B-1-03","row":1,"col":3,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"B-1-04","row":1,"col":4,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"B-1-05","row":1,"col":5,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"B-1-06","row":1,"col":6,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"B-1-07","row":1,"col":7,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"B-1-08","row":1,"col":8,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"B-1-09","row":1,"col":9,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"B-1-10","row":1,"col":10,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"B-1-11","row":1,"col":11,"width_mm":1000,"height_mm":1800,"type":"カット","orientation":"縦","cut_note":"幅1000mmカット"},
+            {"id":"B-2-01","row":2,"col":1,"width_mm":900,"height_mm":1200,"type":"カット","orientation":"縦","cut_note":"高さ1200mmカット"},
+            {"id":"B-2-02","row":2,"col":2,"width_mm":900,"height_mm":1200,"type":"カット","orientation":"縦"},
+            {"id":"B-2-03","row":2,"col":3,"width_mm":900,"height_mm":1200,"type":"カット","orientation":"縦"},
+            {"id":"B-2-04","row":2,"col":4,"width_mm":900,"height_mm":1200,"type":"カット","orientation":"縦"},
+            {"id":"B-2-05","row":2,"col":5,"width_mm":900,"height_mm":1200,"type":"カット","orientation":"縦"},
+            {"id":"B-2-06","row":2,"col":6,"width_mm":900,"height_mm":1200,"type":"カット","orientation":"縦"},
+            {"id":"B-2-07","row":2,"col":7,"width_mm":900,"height_mm":1200,"type":"カット","orientation":"縦"},
+            {"id":"B-2-08","row":2,"col":8,"width_mm":900,"height_mm":1200,"type":"カット","orientation":"縦"},
+            {"id":"B-2-09","row":2,"col":9,"width_mm":900,"height_mm":1200,"type":"カット","orientation":"縦"},
+            {"id":"B-2-10","row":2,"col":10,"width_mm":900,"height_mm":1200,"type":"カット","orientation":"縦"},
+            {"id":"B-2-11","row":2,"col":11,"width_mm":1000,"height_mm":1200,"type":"カット","orientation":"縦"}
+          ]
+        },
+        {
+          "id": "C", "name": "右側壁 外面", "face_type": "side",
+          "width_mm": 10000, "height_mm": 3900,
+          "type": "側型枠",
+          "panel_orientation": "縦", "panel_width_mm": 900, "panel_height_mm": 1800,
+          "layout_method": "縦使い2段＋端数",
+          "finish": "一般仕上げ",
+          "separators": {
+            "type": "C型", "diameter": "2分5厘",
+            "pitch_h_mm": 450, "pitch_v_mm": 450,
+            "edge_margin_mm": 225,
+            "rows": 8,
+            "row_positions_mm": [225, 675, 1125, 1575, 2025, 2475, 2925, 3375],
+            "length_mm": 400,
+            "count": 176
+          },
+          "panels": [
+            {"id":"C-1-01","row":1,"col":1,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"C-1-02","row":1,"col":2,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"C-1-03","row":1,"col":3,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"C-1-04","row":1,"col":4,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"C-1-05","row":1,"col":5,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"C-1-06","row":1,"col":6,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"C-1-07","row":1,"col":7,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"C-1-08","row":1,"col":8,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"C-1-09","row":1,"col":9,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"C-1-10","row":1,"col":10,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"C-1-11","row":1,"col":11,"width_mm":1000,"height_mm":1800,"type":"カット","orientation":"縦"},
+            {"id":"C-2-01","row":2,"col":1,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"C-2-02","row":2,"col":2,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"C-2-03","row":2,"col":3,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"C-2-04","row":2,"col":4,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"C-2-05","row":2,"col":5,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"C-2-06","row":2,"col":6,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"C-2-07","row":2,"col":7,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"C-2-08","row":2,"col":8,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"C-2-09","row":2,"col":9,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"C-2-10","row":2,"col":10,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"C-2-11","row":2,"col":11,"width_mm":1000,"height_mm":1800,"type":"カット","orientation":"縦"},
+            {"id":"C-3-01","row":3,"col":1,"width_mm":900,"height_mm":300,"type":"カット","orientation":"横"},
+            {"id":"C-3-02","row":3,"col":2,"width_mm":900,"height_mm":300,"type":"カット","orientation":"横"},
+            {"id":"C-3-03","row":3,"col":3,"width_mm":900,"height_mm":300,"type":"カット","orientation":"横"},
+            {"id":"C-3-04","row":3,"col":4,"width_mm":900,"height_mm":300,"type":"カット","orientation":"横"},
+            {"id":"C-3-05","row":3,"col":5,"width_mm":900,"height_mm":300,"type":"カット","orientation":"横"},
+            {"id":"C-3-06","row":3,"col":6,"width_mm":900,"height_mm":300,"type":"カット","orientation":"横"},
+            {"id":"C-3-07","row":3,"col":7,"width_mm":900,"height_mm":300,"type":"カット","orientation":"横"},
+            {"id":"C-3-08","row":3,"col":8,"width_mm":900,"height_mm":300,"type":"カット","orientation":"横"},
+            {"id":"C-3-09","row":3,"col":9,"width_mm":900,"height_mm":300,"type":"カット","orientation":"横"},
+            {"id":"C-3-10","row":3,"col":10,"width_mm":900,"height_mm":300,"type":"カット","orientation":"横"},
+            {"id":"C-3-11","row":3,"col":11,"width_mm":1000,"height_mm":300,"type":"カット","orientation":"横"}
+          ]
+        },
+        {
+          "id": "D", "name": "右側壁 内面", "face_type": "side",
+          "width_mm": 10000, "height_mm": 3000,
+          "type": "側型枠",
+          "panel_orientation": "縦", "panel_width_mm": 900, "panel_height_mm": 1800,
+          "layout_method": "縦使い1段＋端数",
+          "finish": "水路仕上げ面",
+          "separators": {
+            "type": "B型", "diameter": "2分5厘",
+            "pitch_h_mm": 450, "pitch_v_mm": 450,
+            "edge_margin_mm": 225,
+            "rows": 6,
+            "row_positions_mm": [225, 675, 1125, 1575, 2025, 2475],
+            "length_mm": 400,
+            "count": 132,
+            "note": "内空面（水路仕上げ面）のためB型＋Pコン使用"
+          },
+          "panels": [
+            {"id":"D-1-01","row":1,"col":1,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"D-1-02","row":1,"col":2,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"D-1-03","row":1,"col":3,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"D-1-04","row":1,"col":4,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"D-1-05","row":1,"col":5,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"D-1-06","row":1,"col":6,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"D-1-07","row":1,"col":7,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"D-1-08","row":1,"col":8,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"D-1-09","row":1,"col":9,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"D-1-10","row":1,"col":10,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"D-1-11","row":1,"col":11,"width_mm":1000,"height_mm":1800,"type":"カット","orientation":"縦"},
+            {"id":"D-2-01","row":2,"col":1,"width_mm":900,"height_mm":1200,"type":"カット","orientation":"縦"},
+            {"id":"D-2-02","row":2,"col":2,"width_mm":900,"height_mm":1200,"type":"カット","orientation":"縦"},
+            {"id":"D-2-03","row":2,"col":3,"width_mm":900,"height_mm":1200,"type":"カット","orientation":"縦"},
+            {"id":"D-2-04","row":2,"col":4,"width_mm":900,"height_mm":1200,"type":"カット","orientation":"縦"},
+            {"id":"D-2-05","row":2,"col":5,"width_mm":900,"height_mm":1200,"type":"カット","orientation":"縦"},
+            {"id":"D-2-06","row":2,"col":6,"width_mm":900,"height_mm":1200,"type":"カット","orientation":"縦"},
+            {"id":"D-2-07","row":2,"col":7,"width_mm":900,"height_mm":1200,"type":"カット","orientation":"縦"},
+            {"id":"D-2-08","row":2,"col":8,"width_mm":900,"height_mm":1200,"type":"カット","orientation":"縦"},
+            {"id":"D-2-09","row":2,"col":9,"width_mm":900,"height_mm":1200,"type":"カット","orientation":"縦"},
+            {"id":"D-2-10","row":2,"col":10,"width_mm":900,"height_mm":1200,"type":"カット","orientation":"縦"},
+            {"id":"D-2-11","row":2,"col":11,"width_mm":1000,"height_mm":1200,"type":"カット","orientation":"縦"}
+          ]
+        },
+        {
+          "id": "T", "name": "頂版下面", "face_type": "side",
+          "width_mm": 3000, "height_mm": 10000,
+          "type": "底型枠",
+          "panel_orientation": "横", "panel_width_mm": 1800, "panel_height_mm": 900,
+          "layout_method": "横使いグリッド",
+          "finish": "水路仕上げ面",
+          "separators": null,
+          "support": { "type": "パイプサポート", "spec": "@900mm + 大引90×90 + 根太45×90 @300" },
+          "panels": [
+            {"id":"T-1-01","row":1,"col":1,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"T-1-02","row":1,"col":2,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"T-1-03","row":1,"col":3,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"T-1-04","row":1,"col":4,"width_mm":300,"height_mm":1800,"type":"カット","orientation":"縦","cut_note":"幅300mmカット"},
+            {"id":"T-2-01","row":2,"col":1,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"T-2-02","row":2,"col":2,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"T-2-03","row":2,"col":3,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"T-2-04","row":2,"col":4,"width_mm":300,"height_mm":1800,"type":"カット","orientation":"縦"},
+            {"id":"T-3-01","row":3,"col":1,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"T-3-02","row":3,"col":2,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"T-3-03","row":3,"col":3,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"T-3-04","row":3,"col":4,"width_mm":300,"height_mm":1800,"type":"カット","orientation":"縦"},
+            {"id":"T-4-01","row":4,"col":1,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"T-4-02","row":4,"col":2,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"T-4-03","row":4,"col":3,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"T-4-04","row":4,"col":4,"width_mm":300,"height_mm":1800,"type":"カット","orientation":"縦"},
+            {"id":"T-5-01","row":5,"col":1,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"T-5-02","row":5,"col":2,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"T-5-03","row":5,"col":3,"width_mm":900,"height_mm":1800,"type":"定尺","orientation":"縦"},
+            {"id":"T-5-04","row":5,"col":4,"width_mm":300,"height_mm":1800,"type":"カット","orientation":"縦"},
+            {"id":"T-6-01","row":6,"col":1,"width_mm":900,"height_mm":1000,"type":"カット","orientation":"縦","cut_note":"高さ1000mmカット"},
+            {"id":"T-6-02","row":6,"col":2,"width_mm":900,"height_mm":1000,"type":"カット","orientation":"縦"},
+            {"id":"T-6-03","row":6,"col":3,"width_mm":900,"height_mm":1000,"type":"カット","orientation":"縦"},
+            {"id":"T-6-04","row":6,"col":4,"width_mm":300,"height_mm":1000,"type":"カット","orientation":"縦"}
+          ]
+        }
+      ]
+    }
+  ],
+  "quantities": {
+    "panels": {
+      "summary": [
+        {"face":"BL/BR(底版側面)","size":"1800×550(カット)","type":"カット","count":10,"area_m2":9.90},
+        {"face":"BL/BR(端数)","size":"1000×550(カット)","type":"カット","count":2,"area_m2":1.10},
+        {"face":"A/C(外壁 定尺)","size":"900×1800","type":"定尺","count":40,"area_m2":64.80},
+        {"face":"A/C(外壁 端数)","size":"1000×1800(カット)","type":"カット","count":4,"area_m2":7.20},
+        {"face":"A/C(外壁 上段)","size":"900×300(カット)","type":"カット","count":20,"area_m2":5.40},
+        {"face":"A/C(外壁 上段端数)","size":"1000×300(カット)","type":"カット","count":2,"area_m2":0.60},
+        {"face":"B/D(内壁 定尺)","size":"900×1800","type":"定尺","count":20,"area_m2":32.40},
+        {"face":"B/D(内壁 端数)","size":"1000×1800(カット)","type":"カット","count":2,"area_m2":3.60},
+        {"face":"B/D(内壁 2段)","size":"900×1200(カット)","type":"カット","count":20,"area_m2":21.60},
+        {"face":"B/D(内壁 2段端数)","size":"1000×1200(カット)","type":"カット","count":2,"area_m2":2.40},
+        {"face":"T(頂版下面 定尺)","size":"900×1800","type":"定尺","count":15,"area_m2":24.30},
+        {"face":"T(頂版下面 端数)","size":"300×1800(カット)","type":"カット","count":5,"area_m2":2.70},
+        {"face":"T(頂版下面 末端段)","size":"900×1000(カット)","type":"カット","count":3,"area_m2":2.70},
+        {"face":"T(頂版下面 末端端数)","size":"300×1000(カット)","type":"カット","count":1,"area_m2":0.30}
+      ],
+      "total_count": 146,
+      "total_area_m2": 179.00,
+      "note": "底版側面はセパなし（控え杭固定）。頂版下面はパイプサポート支保工。"
+    },
+    "separators": {
+      "summary": [
+        {"face":"A(左側壁外面)","type":"C型","diameter":"2分5厘","length_mm":400,"count":176},
+        {"face":"B(左側壁内面)","type":"B型","diameter":"2分5厘","length_mm":400,"count":132},
+        {"face":"C(右側壁外面)","type":"C型","diameter":"2分5厘","length_mm":400,"count":176},
+        {"face":"D(右側壁内面)","type":"B型","diameter":"2分5厘","length_mm":400,"count":132}
+      ],
+      "total_count": 616,
+      "note": "外面=C型（一般セパ）、内面=B型＋Pコン（仕上げ面用）"
+    },
+    "shoring": {
+      "pipe_supports": {"count": 132, "spacing": "@900mm", "height_range": "2600〜3000mm"},
+      "girders": {"size": "90×90mm", "spacing": "@900mm", "total_length_m": 120},
+      "joists": {"size": "45×90mm", "spacing": "@300mm", "total_length_m": 100}
+    },
+    "haunch": {
+      "size_mm": 200,
+      "count": 4,
+      "length_mm": 10000,
+      "material": "三角桟木（面木）200×200"
+    },
+    "joints": {
+      "summary": [
+        { "name": "打継ぎ止水板", "spec": "PVC CC200", "length_m": 10.8, "count": 1, "unit": "箇所", "note": "底版→壁 打継ぎ部" },
+        { "name": "伸縮目地材", "spec": "瀝青質ボード t=20mm", "count": 0, "unit": "箇所", "note": "スパン10m=目地なし" }
+      ],
+      "total_joints": 0
+    }
+  },
+  "notes": [
+    {"category": "打設区分", "content": "2回打設：底版→（打継）→側壁＋頂版同時打設"},
+    {"category": "打継処理", "content": "底版〜側壁打継：止水板(PVC CC200)設置。レイタンス除去後プライマー塗布。"},
+    {"category": "伸縮目地", "content": "スパン長10m毎に伸縮目地（20mmフィラー＋センターバルブ止水板）"},
+    {"category": "内面仕上げ", "content": "内空面（B・D面）は水路仕上げ。B型セパ＋Pコン使用。脱型後Pコン穴モルタル充填。"},
+    {"category": "ハンチ", "content": "4隅にハンチ200mm（三角面木）。底版〜壁・壁〜頂版の入隅部すべて。"},
+    {"category": "支保工", "content": "頂版下面：パイプサポート@900mm、大引90×90@900mm、根太45×90@300mm。荷重計算により安全確認。"},
+    {"category": "かぶり", "content": "土に接する面: 70mm、水に接する面: 40mm"},
+    {"category": "セパ種別", "content": "外面（A・C）＝C型セパ（○印）。内面（B・D）＝B型セパ（●印）。内外で種別が異なるため注意。"}
+  ]
+}
