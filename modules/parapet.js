@@ -429,7 +429,7 @@
         panels.forEach(p => {
           const pw = p.width_mm * scaleX;
           const ph = drawH;
-          const px = marginL + xOff;
+          const px = marginL + xOff * scaleX;
           const py = marginT;
           const isCut = p.type === 'カット';
           svg += `<rect x="${px}" y="${py}" width="${pw}" height="${ph}" fill="${isCut ? '#FFF3B0' : '#fff'}" stroke="#888" stroke-width="0.8"/>`;
