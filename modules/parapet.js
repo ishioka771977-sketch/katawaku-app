@@ -739,6 +739,21 @@
     // 3D View — 展開図を折り畳んで立体化
     // ============================================================
     build3D(data, scene) {
+      // ---- 横桁（crossbeam）検出: face_typeベースの動的3D ----
+      // インライン検出（this問題を回避）
+      const _allFaces = [];
+      for (const ph of (data.phases || [])) {
+        for (const f of (ph.faces || [])) {
+          _allFaces.push(f);
+        }
+      }
+      const _hasStdParapet = _allFaces.some(f => f.id === 'CA' || f.id === 'CB');
+      const _hasFaceType = _allFaces.some(f => f.face_type);
+      if (!_hasStdParapet && _hasFaceType && _allFaces.length > 0) {
+        this._buildCrossbeam3D(data, scene);
+        return;
+      }
+
       const s = data.structure;
       const curb = s.components?.curb || {};
       const barrier = s.components?.barrier || {};
@@ -1003,6 +1018,330 @@
           scene.add(cone);
         });
       }
+    },
+
+    // ============================================================
+    // 横桁（crossbeam）検出
+    // ============================================================
+    _isCrossbeamData(data) {
+      // face_type を持つ面があり、かつ標準パラペットの CA/CB 面が無い場合は横桁
+      const allFaces = [];
+      for (const ph of (data.phases || [])) {
+        for (const f of (ph.faces || [])) {
+          allFaces.push(f);
+        }
+      }
+      const hasStandardParapet = allFaces.some(f => f.id === 'CA' || f.id === 'CB');
+      const hasFaceType = allFaces.some(f => f.face_type);
+      return !hasStandardParapet && hasFaceType && allFaces.length > 0;
+    },
+
+    // ============================================================
+    // 横桁（crossbeam）3D — face_typeベース動的組立
+    // ============================================================
+    _buildCrossbeam3D(data, scene) {
+      const s = data.structure;
+      const dims = s.dimensions || {};
+      const L = dims.total_length_mm || 20000;
+      const bottomW = dims.bottom_width_mm || 800;
+      const gsProfile = dims.girder_side_profile || {};
+      const abProfile = dims.abutment_side_profile || {};
+
+      // 桁側寸法
+      const gsLow = gsProfile.vertical_lower_mm || 500;
+      const gsHaunchH = gsProfile.haunch_h_mm || 200;
+      const gsHaunchW = gsProfile.haunch_w_mm || 200;
+      const gsUp = gsProfile.vertical_upper_mm || 50;
+      const gsTotal = gsProfile.total_mm || (gsLow + gsHaunchH + gsUp);
+
+      // アバット側寸法
+      const abLow = abProfile.vertical_lower_mm || 600;
+      const abHaunchH = abProfile.haunch_h_mm || 100;
+      const abHaunchW = abProfile.haunch_w_mm || 100;
+      const abUp = abProfile.vertical_upper_mm || 250;
+      const abTotal = abProfile.total_mm || (abLow + abHaunchH + abUp);
+
+      const maxH = Math.max(gsTotal, abTotal);
+
+      // カメラ
+      set3DCameraTarget(L / 2, maxH / 2, bottomW / 2, Math.max(L * 0.5, 8000));
+
+      // ---- 参照スラブ（鋼桁フランジ表現）----
+      const flangeW = dims.bottom_composition?.steel_flange_mm || 300;
+      const flangeGeo = new THREE.BoxGeometry(L + 200, 30, flangeW);
+      const flangeMat = new THREE.MeshLambertMaterial({ color: 0x888888, transparent: true, opacity: 0.5 });
+      const flangeMesh = new THREE.Mesh(flangeGeo, flangeMat);
+      flangeMesh.position.set(L / 2, -15, bottomW / 2);
+      scene.add(flangeMesh);
+
+      // ---- コンクリート形状（半透明）----
+      // 断面形状: 底面→桁側(LOW→HAUNCH→UP)→天端→アバット側(UP→HAUNCH→LOW)→底面
+      const concreteShape = new THREE.Shape();
+      // 底面左端 (Z=0)
+      concreteShape.moveTo(0, 0);
+      // 桁側（Z=0側、-Z方向を向く面）
+      concreteShape.lineTo(0, gsLow);
+      concreteShape.lineTo(-gsHaunchW, gsLow + gsHaunchH);
+      concreteShape.lineTo(-gsHaunchW, gsLow + gsHaunchH + gsUp);
+      // 天端
+      concreteShape.lineTo(bottomW + abHaunchW, abLow + abHaunchH + abUp);
+      // アバット側
+      concreteShape.lineTo(bottomW + abHaunchW, abLow + abHaunchH);
+      concreteShape.lineTo(bottomW, abLow);
+      concreteShape.lineTo(bottomW, 0);
+      concreteShape.lineTo(0, 0);
+
+      const concreteExtSettings = { depth: L, bevelEnabled: false };
+      const concreteGeo = new THREE.ExtrudeGeometry(concreteShape, concreteExtSettings);
+      const concreteMat = new THREE.MeshLambertMaterial({ color: 0xd6eaf8, transparent: true, opacity: 0.12 });
+      const concreteMesh = new THREE.Mesh(concreteGeo, concreteMat);
+      // ExtrudeGeometry は XY平面で作ってZ方向に押し出す
+      // 実際の配置: shape.X → 3D.Z, shape.Y → 3D.Y, depth → 3D.X
+      concreteMesh.rotation.y = Math.PI / 2;
+      concreteMesh.position.set(L, 0, 0);
+      scene.add(concreteMesh);
+
+      // ---- ワイヤーフレーム ----
+      const wireGeo = new THREE.ExtrudeGeometry(concreteShape, concreteExtSettings);
+      const wireMat = new THREE.MeshLambertMaterial({ color: 0x64748b, wireframe: true, transparent: true, opacity: 0.2 });
+      const wireMesh = new THREE.Mesh(wireGeo, wireMat);
+      wireMesh.rotation.y = Math.PI / 2;
+      wireMesh.position.set(L, 0, 0);
+      scene.add(wireMesh);
+
+      // ---- Face lookup ----
+      const ff = id => {
+        for (const ph of (data.phases || [])) {
+          for (const f of (ph.faces || [])) {
+            if (f.id === id) return f;
+          }
+        }
+        return { id, name: id, panels: [], separators: null };
+      };
+
+      const faces3D = [];
+
+      // ---- 底面（BT-L, BT-R）----
+      const btL = ff('BT-L'), btR = ff('BT-R');
+      const ovhL = dims.bottom_composition?.left_overhang_mm || 250;
+      const ovhR = dims.bottom_composition?.right_overhang_mm || 250;
+
+      if (btL.panels?.length > 0 || btL.id === 'BT-L') {
+        const btLMesh = createFaceMesh(btL, L, ovhL);
+        scene.add(btLMesh);
+        faces3D.push({
+          mesh: btLMesh,
+          folded: {
+            pos: [L/2, 0, ovhL/2],
+            rot: [-Math.PI/2, 0, 0]  // 水平、上向き
+          },
+          unfolded: {
+            pos: [L/2, 0, -ovhL/2 - 100],
+            rot: [-Math.PI/2, 0, 0]
+          }
+        });
+      }
+
+      if (btR.panels?.length > 0 || btR.id === 'BT-R') {
+        const btRMesh = createFaceMesh(btR, L, ovhR);
+        scene.add(btRMesh);
+        faces3D.push({
+          mesh: btRMesh,
+          folded: {
+            pos: [L/2, 0, bottomW - ovhR/2],
+            rot: [-Math.PI/2, 0, 0]
+          },
+          unfolded: {
+            pos: [L/2, 0, bottomW + ovhR/2 + 100],
+            rot: [-Math.PI/2, 0, 0]
+          }
+        });
+      }
+
+      // ---- 桁側（GS = Girder Side）: Z=0側、-Z方向を向く面 ----
+      // GS-L-LOW: 垂直面 (h=479mm = gsLow - steel_zone(50))
+      const gsLowH = gsProfile.wood_formwork_lower_mm || (gsLow - (gsProfile.steel_formwork_zone_mm || 0));
+      const gsHaunchDev = gsProfile.haunch_development_mm || 283;
+
+      ['L', 'R'].forEach((side, sIdx) => {
+        const zSign = sIdx === 0 ? -1 : 1; // L=-Z, R=+Z
+        const zBase = sIdx === 0 ? 0 : bottomW;
+
+        // LOW面（垂直）
+        const lowFace = ff(`GS-${side}-LOW`);
+        const lowMesh = createFaceMesh(lowFace, L, gsLowH);
+        scene.add(lowMesh);
+        faces3D.push({
+          mesh: lowMesh,
+          folded: {
+            pos: [L/2, gsLowH/2, zBase],
+            rot: [0, sIdx === 0 ? Math.PI : 0, 0]
+          },
+          unfolded: {
+            pos: [L/2, 0, zBase + zSign * (gsLowH/2 + 200)],
+            rot: [-Math.PI/2, 0, 0]
+          }
+        });
+
+        // HAUNCH面（45°傾斜）
+        const haunchFace = ff(`GS-${side}-HAUNCH`);
+        const haunchMesh = createFaceMesh(haunchFace, L, gsHaunchDev);
+        scene.add(haunchMesh);
+        // ハンチ面は45°傾斜で配置
+        const haunchAngle = Math.atan2(gsHaunchH, gsHaunchW); // ≈45°
+        const haunchCenterY = gsLow + gsHaunchH / 2;
+        const haunchCenterZ = zBase + zSign * (-gsHaunchW / 2);
+        faces3D.push({
+          mesh: haunchMesh,
+          folded: {
+            pos: [L/2, haunchCenterY, haunchCenterZ],
+            rot: [sIdx === 0 ? -haunchAngle : haunchAngle, sIdx === 0 ? Math.PI : 0, 0]
+          },
+          unfolded: {
+            pos: [L/2, 0, zBase + zSign * (gsLowH + gsHaunchDev/2 + 300)],
+            rot: [-Math.PI/2, 0, 0]
+          }
+        });
+
+        // UP面（垂直、ハンチの上）
+        const upFace = ff(`GS-${side}-UP`);
+        if (gsUp > 0) {
+          const upMesh = createFaceMesh(upFace, L, gsUp);
+          scene.add(upMesh);
+          faces3D.push({
+            mesh: upMesh,
+            folded: {
+              pos: [L/2, gsLow + gsHaunchH + gsUp/2, zBase + zSign * (-gsHaunchW)],
+              rot: [0, sIdx === 0 ? Math.PI : 0, 0]
+            },
+            unfolded: {
+              pos: [L/2, 0, zBase + zSign * (gsLowH + gsHaunchDev + gsUp/2 + 400)],
+              rot: [-Math.PI/2, 0, 0]
+            }
+          });
+        }
+      });
+
+      // ---- アバット側（AB = Abutment Side）: Z=bottomW側、+Z方向を向く面 ----
+      const abLowH = abLow;
+      const abHaunchDev = abProfile.haunch_development_mm || 141;
+
+      ['L', 'R'].forEach((side, sIdx) => {
+        const zSign = sIdx === 0 ? -1 : 1;
+        const zBase = sIdx === 0 ? 0 : bottomW;
+
+        // LOW面（垂直）
+        const lowFace = ff(`AB-${side}-LOW`);
+        const lowMesh = createFaceMesh(lowFace, L, abLowH);
+        scene.add(lowMesh);
+        faces3D.push({
+          mesh: lowMesh,
+          folded: {
+            pos: [L/2, abLowH/2, zBase],
+            rot: [0, sIdx === 0 ? Math.PI : 0, 0]
+          },
+          unfolded: {
+            // アバット側は桁側の反対側に展開
+            pos: [L/2, 0, zBase + zSign * (abLowH/2 + 200)],
+            rot: [-Math.PI/2, 0, 0]
+          }
+        });
+
+        // HAUNCH面（45°傾斜）
+        const haunchFace = ff(`AB-${side}-HAUNCH`);
+        const haunchMesh = createFaceMesh(haunchFace, L, abHaunchDev);
+        scene.add(haunchMesh);
+        const haunchAngle = Math.atan2(abHaunchH, abHaunchW);
+        const haunchCenterY = abLow + abHaunchH / 2;
+        const haunchCenterZ = zBase + zSign * abHaunchW / 2;
+        faces3D.push({
+          mesh: haunchMesh,
+          folded: {
+            pos: [L/2, haunchCenterY, haunchCenterZ],
+            rot: [sIdx === 0 ? -haunchAngle : haunchAngle, sIdx === 0 ? Math.PI : 0, 0]
+          },
+          unfolded: {
+            pos: [L/2, 0, zBase + zSign * (abLowH + abHaunchDev/2 + 300)],
+            rot: [-Math.PI/2, 0, 0]
+          }
+        });
+
+        // UP面（垂直、ハンチの上）
+        const upFace = ff(`AB-${side}-UP`);
+        const upMesh = createFaceMesh(upFace, L, abUp);
+        scene.add(upMesh);
+        faces3D.push({
+          mesh: upMesh,
+          folded: {
+            pos: [L/2, abLow + abHaunchH + abUp/2, zBase + zSign * abHaunchW],
+            rot: [0, sIdx === 0 ? Math.PI : 0, 0]
+          },
+          unfolded: {
+            pos: [L/2, 0, zBase + zSign * (abLowH + abHaunchDev + abUp/2 + 400)],
+            rot: [-Math.PI/2, 0, 0]
+          }
+        });
+      });
+
+      // ---- 端面（END-L, END-R）----
+      const endColor = 0xf0e6d3;
+      const endMat = new THREE.MeshLambertMaterial({ color: endColor, side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
+
+      ['L', 'R'].forEach((side, sIdx) => {
+        const endFace = ff(`END-${side}`);
+        const endW = endFace.width_mm || bottomW;
+        const endH = endFace.height_mm || maxH;
+        const endMesh = createFaceMesh(endFace, endW, endH);
+        scene.add(endMesh);
+
+        const xPos = sIdx === 0 ? 0 : L;
+        faces3D.push({
+          mesh: endMesh,
+          folded: {
+            pos: [xPos, endH/2, bottomW/2],
+            rot: [0, Math.PI/2, 0]
+          },
+          unfolded: {
+            pos: [sIdx === 0 ? -endW/2 - 200 : L + endW/2 + 200, 0, bottomW/2],
+            rot: [-Math.PI/2, 0, 0]
+          }
+        });
+      });
+
+      // ---- エッジライン（断面の輪郭）----
+      const edgeMat = new THREE.LineBasicMaterial({ color: 0x555555 });
+      [0, L].forEach(xPos => {
+        // 断面形状の輪郭線
+        const pts = [
+          new THREE.Vector3(xPos, 0, 0),
+          new THREE.Vector3(xPos, gsLow, 0),
+          new THREE.Vector3(xPos, gsLow + gsHaunchH, -gsHaunchW),
+          new THREE.Vector3(xPos, gsTotal, -gsHaunchW),
+          // 天端（アバット側へ）
+          new THREE.Vector3(xPos, abTotal, bottomW + abHaunchW),
+          new THREE.Vector3(xPos, abLow + abHaunchH, bottomW + abHaunchW),
+          new THREE.Vector3(xPos, abLow, bottomW),
+          new THREE.Vector3(xPos, 0, bottomW),
+          new THREE.Vector3(xPos, 0, 0),
+        ];
+        const lineGeo = new THREE.BufferGeometry().setFromPoints(pts);
+        scene.add(new THREE.Line(lineGeo, edgeMat));
+      });
+
+      // 底面の長手方向エッジ
+      [[0, 0], [bottomW, 0]].forEach(([z, y]) => {
+        const pts = [new THREE.Vector3(0, y, z), new THREE.Vector3(L, y, z)];
+        scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), edgeMat));
+      });
+
+      // ---- 初期状態（folded）----
+      faces3D.forEach(f => {
+        f.mesh.position.set(...f.folded.pos);
+        f.mesh.rotation.set(...f.folded.rot);
+      });
+
+      // アニメーション登録
+      register3DFaces(faces3D);
     },
 
     // ============================================================

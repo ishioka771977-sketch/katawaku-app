@@ -1,2 +1,10 @@
 serve.js
 node_modules/
+
+.vercel
+
+# Claude Code local settings
+.claude/
+
+# env files
+.env*

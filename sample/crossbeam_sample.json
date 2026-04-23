@@ -1,0 +1,2151 @@
+{
+  "project": {
+    "name": "一般国道5号 森町外 宿野辺橋床版工事",
+    "contractor": "(株)石岡組",
+    "supervisor": "田中 葵",
+    "owner": "北海道開発局 函館開発建設部",
+    "created_at": "2026-04-03",
+    "created_by": "くろたん",
+    "version": "2.0",
+    "note": "S-1端支点上横桁（A1側）型枠JSON。C-C断面図に基づく完全版。ハンチ・鋼製型枠区間反映済み"
+  },
+  "structure": {
+    "type": "parapet_curb_and_barrier",
+    "name": "宿野辺橋 S-1端支点上横桁（A1側）",
+    "casting_method": "separate",
+    "concrete": "RC-5（膨張材入り・低添加型20kg/m3）σck=24N/mm2",
+    "note": "横桁コンクリートは床版と同時打設。鋼桁ウェブ・フランジが部分的に型枠を兼用",
+    "dimensions": {
+      "total_length_mm": 21500,
+      "bottom_width_mm": 800,
+      "bottom_composition": {
+        "left_overhang_mm": 250,
+        "steel_flange_mm": 300,
+        "right_overhang_mm": 250,
+        "note": "中央300mmは鋼製下フランジ（型枠不要）。両側250mmはコンクリート張出し（底型枠必要）"
+      },
+      "girder_side_profile": {
+        "note": "桁側断面（左右対称）: 529mm垂直→200×200ハンチ(45°)→50mm垂直→鋼桁接合",
+        "vertical_lower_mm": 529,
+        "haunch_h_mm": 200,
+        "haunch_w_mm": 200,
+        "haunch_development_mm": 283,
+        "vertical_upper_mm": 50,
+        "total_mm": 779,
+        "steel_formwork_zone_mm": 50,
+        "wood_formwork_lower_mm": 479
+      },
+      "abutment_side_profile": {
+        "note": "アバット側断面: 600mm垂直→100×100ハンチ(45°)→254mm垂直→上端",
+        "vertical_lower_mm": 600,
+        "haunch_h_mm": 100,
+        "haunch_w_mm": 100,
+        "haunch_development_mm": 141,
+        "vertical_upper_mm": 254,
+        "total_mm": 954,
+        "steel_formwork_zone_mm": 0,
+        "note2": "アバット側は全部木製型枠"
+      }
+    }
+  },
+  "phases": [
+    {
+      "phase": 1,
+      "name": "S-1横桁型枠",
+      "faces": [
+        {
+          "id": "BT-L",
+          "name": "底面 左側張出し",
+          "face_type": "bottom",
+          "width_mm": 21500,
+          "height_mm": 250,
+          "finish": "打放し",
+          "layout_method": "連続",
+          "panel_orientation": "横",
+          "panel_width_mm": 1800,
+          "panel_height_mm": 250,
+          "note": "下フランジ左側の張出し250mm幅。鋼桁フランジからアングル等で吊り支持",
+          "panels": [
+            {
+              "id": "BT-L-01",
+              "row": 1,
+              "col": 1,
+              "width_mm": 1800,
+              "height_mm": 250,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "BT-L-02",
+              "row": 1,
+              "col": 2,
+              "width_mm": 1800,
+              "height_mm": 250,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "BT-L-03",
+              "row": 1,
+              "col": 3,
+              "width_mm": 1800,
+              "height_mm": 250,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "BT-L-04",
+              "row": 1,
+              "col": 4,
+              "width_mm": 1800,
+              "height_mm": 250,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "BT-L-05",
+              "row": 1,
+              "col": 5,
+              "width_mm": 1800,
+              "height_mm": 250,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "BT-L-06",
+              "row": 1,
+              "col": 6,
+              "width_mm": 1800,
+              "height_mm": 250,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "BT-L-07",
+              "row": 1,
+              "col": 7,
+              "width_mm": 1800,
+              "height_mm": 250,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "BT-L-08",
+              "row": 1,
+              "col": 8,
+              "width_mm": 1800,
+              "height_mm": 250,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "BT-L-09",
+              "row": 1,
+              "col": 9,
+              "width_mm": 1800,
+              "height_mm": 250,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "BT-L-10",
+              "row": 1,
+              "col": 10,
+              "width_mm": 1800,
+              "height_mm": 250,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "BT-L-11",
+              "row": 1,
+              "col": 11,
+              "width_mm": 1800,
+              "height_mm": 250,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "BT-L-12",
+              "row": 1,
+              "col": 12,
+              "width_mm": 1700,
+              "height_mm": 250,
+              "type": "カット",
+              "orientation": "横",
+              "cut_note": "端数1700mm"
+            }
+          ],
+          "separators": null,
+          "support": {
+            "method": "吊り支持",
+            "note": "鋼桁下フランジからL型アングル等で受ける"
+          }
+        },
+        {
+          "id": "BT-R",
+          "name": "底面 右側張出し",
+          "face_type": "bottom",
+          "width_mm": 21500,
+          "height_mm": 250,
+          "finish": "打放し",
+          "layout_method": "連続",
+          "panel_orientation": "横",
+          "panel_width_mm": 1800,
+          "panel_height_mm": 250,
+          "note": "BT-Lと対称",
+          "panels": [
+            {
+              "id": "BT-R-01",
+              "row": 1,
+              "col": 1,
+              "width_mm": 1800,
+              "height_mm": 250,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "BT-R-02",
+              "row": 1,
+              "col": 2,
+              "width_mm": 1800,
+              "height_mm": 250,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "BT-R-03",
+              "row": 1,
+              "col": 3,
+              "width_mm": 1800,
+              "height_mm": 250,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "BT-R-04",
+              "row": 1,
+              "col": 4,
+              "width_mm": 1800,
+              "height_mm": 250,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "BT-R-05",
+              "row": 1,
+              "col": 5,
+              "width_mm": 1800,
+              "height_mm": 250,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "BT-R-06",
+              "row": 1,
+              "col": 6,
+              "width_mm": 1800,
+              "height_mm": 250,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "BT-R-07",
+              "row": 1,
+              "col": 7,
+              "width_mm": 1800,
+              "height_mm": 250,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "BT-R-08",
+              "row": 1,
+              "col": 8,
+              "width_mm": 1800,
+              "height_mm": 250,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "BT-R-09",
+              "row": 1,
+              "col": 9,
+              "width_mm": 1800,
+              "height_mm": 250,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "BT-R-10",
+              "row": 1,
+              "col": 10,
+              "width_mm": 1800,
+              "height_mm": 250,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "BT-R-11",
+              "row": 1,
+              "col": 11,
+              "width_mm": 1800,
+              "height_mm": 250,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "BT-R-12",
+              "row": 1,
+              "col": 12,
+              "width_mm": 1700,
+              "height_mm": 250,
+              "type": "カット",
+              "orientation": "横",
+              "cut_note": "端数1700mm"
+            }
+          ],
+          "separators": null,
+          "support": {
+            "method": "吊り支持",
+            "note": "BT-Lと対称"
+          }
+        },
+        {
+          "id": "GS-L-LOW",
+          "name": "桁側 左側面（下部479mm）",
+          "face_type": "side",
+          "width_mm": 21500,
+          "height_mm": 479,
+          "finish": "打放し",
+          "layout_method": "連続",
+          "panel_orientation": "横",
+          "panel_width_mm": 1800,
+          "panel_height_mm": 479,
+          "note": "桁側左。529mm立ち上がりのうち下50mmは鋼製型枠→木製は479mm分",
+          "panels": [
+            {
+              "id": "GS-L-LOW-01",
+              "row": 1,
+              "col": 1,
+              "width_mm": 1800,
+              "height_mm": 479,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-L-LOW-02",
+              "row": 1,
+              "col": 2,
+              "width_mm": 1800,
+              "height_mm": 479,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-L-LOW-03",
+              "row": 1,
+              "col": 3,
+              "width_mm": 1800,
+              "height_mm": 479,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-L-LOW-04",
+              "row": 1,
+              "col": 4,
+              "width_mm": 1800,
+              "height_mm": 479,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-L-LOW-05",
+              "row": 1,
+              "col": 5,
+              "width_mm": 1800,
+              "height_mm": 479,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-L-LOW-06",
+              "row": 1,
+              "col": 6,
+              "width_mm": 1800,
+              "height_mm": 479,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-L-LOW-07",
+              "row": 1,
+              "col": 7,
+              "width_mm": 1800,
+              "height_mm": 479,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-L-LOW-08",
+              "row": 1,
+              "col": 8,
+              "width_mm": 1800,
+              "height_mm": 479,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-L-LOW-09",
+              "row": 1,
+              "col": 9,
+              "width_mm": 1800,
+              "height_mm": 479,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-L-LOW-10",
+              "row": 1,
+              "col": 10,
+              "width_mm": 1800,
+              "height_mm": 479,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-L-LOW-11",
+              "row": 1,
+              "col": 11,
+              "width_mm": 1800,
+              "height_mm": 479,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-L-LOW-12",
+              "row": 1,
+              "col": 12,
+              "width_mm": 1700,
+              "height_mm": 479,
+              "type": "カット",
+              "orientation": "横",
+              "cut_note": "端数1700mm"
+            }
+          ],
+          "separators": {
+            "type": "C型",
+            "diameter": "2分5厘",
+            "pitch_h_mm": 600,
+            "rows": 1,
+            "row_positions_mm": [
+              240
+            ],
+            "edge_margin_mm": 150,
+            "count": 37,
+            "note": "高さ479mmのため1段。対面は鋼桁ウェブにセパ受け"
+          }
+        },
+        {
+          "id": "GS-L-HAUNCH",
+          "name": "桁側 左ハンチ面（200×200 45°）",
+          "face_type": "haunch",
+          "width_mm": 21500,
+          "height_mm": 283,
+          "actual_dimensions": {
+            "horizontal_mm": 200,
+            "vertical_mm": 200,
+            "angle_deg": 45,
+            "development_mm": 283
+          },
+          "finish": "打放し",
+          "layout_method": "連続",
+          "panel_orientation": "横",
+          "panel_width_mm": 1800,
+          "panel_height_mm": 283,
+          "note": "45度ハンチ面。展開長283mm(=√(200²+200²))。コンパネを斜めカットして設置",
+          "panels": [
+            {
+              "id": "GS-L-H-01",
+              "row": 1,
+              "col": 1,
+              "width_mm": 1800,
+              "height_mm": 283,
+              "type": "カット",
+              "orientation": "横",
+              "cut_note": "斜めカット"
+            },
+            {
+              "id": "GS-L-H-02",
+              "row": 1,
+              "col": 2,
+              "width_mm": 1800,
+              "height_mm": 283,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-L-H-03",
+              "row": 1,
+              "col": 3,
+              "width_mm": 1800,
+              "height_mm": 283,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-L-H-04",
+              "row": 1,
+              "col": 4,
+              "width_mm": 1800,
+              "height_mm": 283,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-L-H-05",
+              "row": 1,
+              "col": 5,
+              "width_mm": 1800,
+              "height_mm": 283,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-L-H-06",
+              "row": 1,
+              "col": 6,
+              "width_mm": 1800,
+              "height_mm": 283,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-L-H-07",
+              "row": 1,
+              "col": 7,
+              "width_mm": 1800,
+              "height_mm": 283,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-L-H-08",
+              "row": 1,
+              "col": 8,
+              "width_mm": 1800,
+              "height_mm": 283,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-L-H-09",
+              "row": 1,
+              "col": 9,
+              "width_mm": 1800,
+              "height_mm": 283,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-L-H-10",
+              "row": 1,
+              "col": 10,
+              "width_mm": 1800,
+              "height_mm": 283,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-L-H-11",
+              "row": 1,
+              "col": 11,
+              "width_mm": 1800,
+              "height_mm": 283,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-L-H-12",
+              "row": 1,
+              "col": 12,
+              "width_mm": 1700,
+              "height_mm": 283,
+              "type": "カット",
+              "orientation": "横",
+              "cut_note": "端数1700mm"
+            }
+          ],
+          "separators": null,
+          "support": {
+            "method": "下部側面型枠と桟木で固定",
+            "note": "斜め面のためセパ不可。桟木＋端太で押さえ"
+          }
+        },
+        {
+          "id": "GS-L-UP",
+          "name": "桁側 左側面（上部50mm）",
+          "face_type": "side",
+          "width_mm": 21500,
+          "height_mm": 50,
+          "finish": "打放し",
+          "layout_method": "連続",
+          "panel_orientation": "横",
+          "panel_width_mm": 1800,
+          "panel_height_mm": 50,
+          "note": "ハンチ上端から鋼桁ウェブまでの50mm垂直部分",
+          "panels": [
+            {
+              "id": "GS-L-UP-01",
+              "row": 1,
+              "col": 1,
+              "width_mm": 1800,
+              "height_mm": 50,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-L-UP-02",
+              "row": 1,
+              "col": 2,
+              "width_mm": 1800,
+              "height_mm": 50,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-L-UP-03",
+              "row": 1,
+              "col": 3,
+              "width_mm": 1800,
+              "height_mm": 50,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-L-UP-04",
+              "row": 1,
+              "col": 4,
+              "width_mm": 1800,
+              "height_mm": 50,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-L-UP-05",
+              "row": 1,
+              "col": 5,
+              "width_mm": 1800,
+              "height_mm": 50,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-L-UP-06",
+              "row": 1,
+              "col": 6,
+              "width_mm": 1800,
+              "height_mm": 50,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-L-UP-07",
+              "row": 1,
+              "col": 7,
+              "width_mm": 1800,
+              "height_mm": 50,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-L-UP-08",
+              "row": 1,
+              "col": 8,
+              "width_mm": 1800,
+              "height_mm": 50,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-L-UP-09",
+              "row": 1,
+              "col": 9,
+              "width_mm": 1800,
+              "height_mm": 50,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-L-UP-10",
+              "row": 1,
+              "col": 10,
+              "width_mm": 1800,
+              "height_mm": 50,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-L-UP-11",
+              "row": 1,
+              "col": 11,
+              "width_mm": 1800,
+              "height_mm": 50,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-L-UP-12",
+              "row": 1,
+              "col": 12,
+              "width_mm": 1700,
+              "height_mm": 50,
+              "type": "カット",
+              "orientation": "横",
+              "cut_note": "端数1700mm"
+            }
+          ],
+          "separators": null,
+          "support": {
+            "method": "ハンチ型枠に接続",
+            "note": "50mm幅の短冊。ハンチ面の上端に突き合わせて桟木固定"
+          }
+        },
+        {
+          "id": "GS-R-LOW",
+          "name": "桁側 右側面（下部479mm）",
+          "face_type": "side",
+          "width_mm": 21500,
+          "height_mm": 479,
+          "finish": "打放し",
+          "layout_method": "連続",
+          "panel_orientation": "横",
+          "panel_width_mm": 1800,
+          "panel_height_mm": 479,
+          "note": "GS-L-LOWと対称",
+          "panels": [
+            {
+              "id": "GS-R-LOW-01",
+              "row": 1,
+              "col": 1,
+              "width_mm": 1800,
+              "height_mm": 479,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-R-LOW-02",
+              "row": 1,
+              "col": 2,
+              "width_mm": 1800,
+              "height_mm": 479,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-R-LOW-03",
+              "row": 1,
+              "col": 3,
+              "width_mm": 1800,
+              "height_mm": 479,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-R-LOW-04",
+              "row": 1,
+              "col": 4,
+              "width_mm": 1800,
+              "height_mm": 479,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-R-LOW-05",
+              "row": 1,
+              "col": 5,
+              "width_mm": 1800,
+              "height_mm": 479,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-R-LOW-06",
+              "row": 1,
+              "col": 6,
+              "width_mm": 1800,
+              "height_mm": 479,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-R-LOW-07",
+              "row": 1,
+              "col": 7,
+              "width_mm": 1800,
+              "height_mm": 479,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-R-LOW-08",
+              "row": 1,
+              "col": 8,
+              "width_mm": 1800,
+              "height_mm": 479,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-R-LOW-09",
+              "row": 1,
+              "col": 9,
+              "width_mm": 1800,
+              "height_mm": 479,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-R-LOW-10",
+              "row": 1,
+              "col": 10,
+              "width_mm": 1800,
+              "height_mm": 479,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-R-LOW-11",
+              "row": 1,
+              "col": 11,
+              "width_mm": 1800,
+              "height_mm": 479,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-R-LOW-12",
+              "row": 1,
+              "col": 12,
+              "width_mm": 1700,
+              "height_mm": 479,
+              "type": "カット",
+              "orientation": "横",
+              "cut_note": "端数1700mm"
+            }
+          ],
+          "separators": {
+            "type": "C型",
+            "diameter": "2分5厘",
+            "pitch_h_mm": 600,
+            "rows": 1,
+            "row_positions_mm": [
+              240
+            ],
+            "edge_margin_mm": 150,
+            "count": 37
+          }
+        },
+        {
+          "id": "GS-R-HAUNCH",
+          "name": "桁側 右ハンチ面（200×200 45°）",
+          "face_type": "haunch",
+          "width_mm": 21500,
+          "height_mm": 283,
+          "actual_dimensions": {
+            "horizontal_mm": 200,
+            "vertical_mm": 200,
+            "angle_deg": 45,
+            "development_mm": 283
+          },
+          "finish": "打放し",
+          "layout_method": "連続",
+          "panel_orientation": "横",
+          "panel_width_mm": 1800,
+          "panel_height_mm": 283,
+          "note": "GS-L-HAUNCHと対称",
+          "panels": [
+            {
+              "id": "GS-R-H-01",
+              "row": 1,
+              "col": 1,
+              "width_mm": 1800,
+              "height_mm": 283,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-R-H-02",
+              "row": 1,
+              "col": 2,
+              "width_mm": 1800,
+              "height_mm": 283,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-R-H-03",
+              "row": 1,
+              "col": 3,
+              "width_mm": 1800,
+              "height_mm": 283,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-R-H-04",
+              "row": 1,
+              "col": 4,
+              "width_mm": 1800,
+              "height_mm": 283,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-R-H-05",
+              "row": 1,
+              "col": 5,
+              "width_mm": 1800,
+              "height_mm": 283,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-R-H-06",
+              "row": 1,
+              "col": 6,
+              "width_mm": 1800,
+              "height_mm": 283,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-R-H-07",
+              "row": 1,
+              "col": 7,
+              "width_mm": 1800,
+              "height_mm": 283,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-R-H-08",
+              "row": 1,
+              "col": 8,
+              "width_mm": 1800,
+              "height_mm": 283,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-R-H-09",
+              "row": 1,
+              "col": 9,
+              "width_mm": 1800,
+              "height_mm": 283,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-R-H-10",
+              "row": 1,
+              "col": 10,
+              "width_mm": 1800,
+              "height_mm": 283,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-R-H-11",
+              "row": 1,
+              "col": 11,
+              "width_mm": 1800,
+              "height_mm": 283,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-R-H-12",
+              "row": 1,
+              "col": 12,
+              "width_mm": 1700,
+              "height_mm": 283,
+              "type": "カット",
+              "orientation": "横",
+              "cut_note": "端数1700mm"
+            }
+          ],
+          "separators": null,
+          "support": {
+            "method": "下部側面型枠と桟木で固定",
+            "note": "斜め面のためセパ不可"
+          }
+        },
+        {
+          "id": "GS-R-UP",
+          "name": "桁側 右側面（上部50mm）",
+          "face_type": "side",
+          "width_mm": 21500,
+          "height_mm": 50,
+          "finish": "打放し",
+          "layout_method": "連続",
+          "panel_orientation": "横",
+          "panel_width_mm": 1800,
+          "panel_height_mm": 50,
+          "note": "GS-L-UPと対称",
+          "panels": [
+            {
+              "id": "GS-R-UP-01",
+              "row": 1,
+              "col": 1,
+              "width_mm": 1800,
+              "height_mm": 50,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-R-UP-02",
+              "row": 1,
+              "col": 2,
+              "width_mm": 1800,
+              "height_mm": 50,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-R-UP-03",
+              "row": 1,
+              "col": 3,
+              "width_mm": 1800,
+              "height_mm": 50,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-R-UP-04",
+              "row": 1,
+              "col": 4,
+              "width_mm": 1800,
+              "height_mm": 50,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-R-UP-05",
+              "row": 1,
+              "col": 5,
+              "width_mm": 1800,
+              "height_mm": 50,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-R-UP-06",
+              "row": 1,
+              "col": 6,
+              "width_mm": 1800,
+              "height_mm": 50,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-R-UP-07",
+              "row": 1,
+              "col": 7,
+              "width_mm": 1800,
+              "height_mm": 50,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-R-UP-08",
+              "row": 1,
+              "col": 8,
+              "width_mm": 1800,
+              "height_mm": 50,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-R-UP-09",
+              "row": 1,
+              "col": 9,
+              "width_mm": 1800,
+              "height_mm": 50,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-R-UP-10",
+              "row": 1,
+              "col": 10,
+              "width_mm": 1800,
+              "height_mm": 50,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-R-UP-11",
+              "row": 1,
+              "col": 11,
+              "width_mm": 1800,
+              "height_mm": 50,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "GS-R-UP-12",
+              "row": 1,
+              "col": 12,
+              "width_mm": 1700,
+              "height_mm": 50,
+              "type": "カット",
+              "orientation": "横",
+              "cut_note": "端数1700mm"
+            }
+          ],
+          "separators": null,
+          "support": {
+            "method": "ハンチ型枠に接続"
+          }
+        },
+        {
+          "id": "AB-L-LOW",
+          "name": "アバット側 左側面（下部600mm）",
+          "face_type": "side",
+          "width_mm": 21500,
+          "height_mm": 600,
+          "finish": "打放し",
+          "layout_method": "連続",
+          "panel_orientation": "横",
+          "panel_width_mm": 1800,
+          "panel_height_mm": 600,
+          "note": "アバット側左。底面から600mm垂直立ち上がり。全部木製型枠",
+          "panels": [
+            {
+              "id": "AB-L-LOW-01",
+              "row": 1,
+              "col": 1,
+              "width_mm": 1800,
+              "height_mm": 600,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-L-LOW-02",
+              "row": 1,
+              "col": 2,
+              "width_mm": 1800,
+              "height_mm": 600,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-L-LOW-03",
+              "row": 1,
+              "col": 3,
+              "width_mm": 1800,
+              "height_mm": 600,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-L-LOW-04",
+              "row": 1,
+              "col": 4,
+              "width_mm": 1800,
+              "height_mm": 600,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-L-LOW-05",
+              "row": 1,
+              "col": 5,
+              "width_mm": 1800,
+              "height_mm": 600,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-L-LOW-06",
+              "row": 1,
+              "col": 6,
+              "width_mm": 1800,
+              "height_mm": 600,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-L-LOW-07",
+              "row": 1,
+              "col": 7,
+              "width_mm": 1800,
+              "height_mm": 600,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-L-LOW-08",
+              "row": 1,
+              "col": 8,
+              "width_mm": 1800,
+              "height_mm": 600,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-L-LOW-09",
+              "row": 1,
+              "col": 9,
+              "width_mm": 1800,
+              "height_mm": 600,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-L-LOW-10",
+              "row": 1,
+              "col": 10,
+              "width_mm": 1800,
+              "height_mm": 600,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-L-LOW-11",
+              "row": 1,
+              "col": 11,
+              "width_mm": 1800,
+              "height_mm": 600,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-L-LOW-12",
+              "row": 1,
+              "col": 12,
+              "width_mm": 1700,
+              "height_mm": 600,
+              "type": "カット",
+              "orientation": "横",
+              "cut_note": "端数1700mm"
+            }
+          ],
+          "separators": {
+            "type": "C型",
+            "diameter": "2分5厘",
+            "pitch_h_mm": 600,
+            "rows": 1,
+            "row_positions_mm": [
+              300
+            ],
+            "edge_margin_mm": 150,
+            "count": 37,
+            "note": "高さ600mmのため1段（500mm超だが対面が鋼桁なので1段で可）"
+          }
+        },
+        {
+          "id": "AB-L-HAUNCH",
+          "name": "アバット側 左ハンチ面（100×100 45°）",
+          "face_type": "haunch",
+          "width_mm": 21500,
+          "height_mm": 141,
+          "actual_dimensions": {
+            "horizontal_mm": 100,
+            "vertical_mm": 100,
+            "angle_deg": 45,
+            "development_mm": 141
+          },
+          "finish": "打放し",
+          "layout_method": "連続",
+          "panel_orientation": "横",
+          "panel_width_mm": 1800,
+          "panel_height_mm": 141,
+          "note": "45度ハンチ面。展開長141mm(=√(100²+100²))",
+          "panels": [
+            {
+              "id": "AB-L-H-01",
+              "row": 1,
+              "col": 1,
+              "width_mm": 1800,
+              "height_mm": 141,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-L-H-02",
+              "row": 1,
+              "col": 2,
+              "width_mm": 1800,
+              "height_mm": 141,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-L-H-03",
+              "row": 1,
+              "col": 3,
+              "width_mm": 1800,
+              "height_mm": 141,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-L-H-04",
+              "row": 1,
+              "col": 4,
+              "width_mm": 1800,
+              "height_mm": 141,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-L-H-05",
+              "row": 1,
+              "col": 5,
+              "width_mm": 1800,
+              "height_mm": 141,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-L-H-06",
+              "row": 1,
+              "col": 6,
+              "width_mm": 1800,
+              "height_mm": 141,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-L-H-07",
+              "row": 1,
+              "col": 7,
+              "width_mm": 1800,
+              "height_mm": 141,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-L-H-08",
+              "row": 1,
+              "col": 8,
+              "width_mm": 1800,
+              "height_mm": 141,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-L-H-09",
+              "row": 1,
+              "col": 9,
+              "width_mm": 1800,
+              "height_mm": 141,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-L-H-10",
+              "row": 1,
+              "col": 10,
+              "width_mm": 1800,
+              "height_mm": 141,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-L-H-11",
+              "row": 1,
+              "col": 11,
+              "width_mm": 1800,
+              "height_mm": 141,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-L-H-12",
+              "row": 1,
+              "col": 12,
+              "width_mm": 1700,
+              "height_mm": 141,
+              "type": "カット",
+              "orientation": "横",
+              "cut_note": "端数1700mm"
+            }
+          ],
+          "separators": null,
+          "support": {
+            "method": "下部側面型枠と桟木で固定"
+          }
+        },
+        {
+          "id": "AB-L-UP",
+          "name": "アバット側 左側面（上部254mm）",
+          "face_type": "side",
+          "width_mm": 21500,
+          "height_mm": 254,
+          "finish": "打放し",
+          "layout_method": "連続",
+          "panel_orientation": "横",
+          "panel_width_mm": 1800,
+          "panel_height_mm": 254,
+          "note": "ハンチ上端（700mm）から上端（954mm）までの254mm",
+          "panels": [
+            {
+              "id": "AB-L-UP-01",
+              "row": 1,
+              "col": 1,
+              "width_mm": 1800,
+              "height_mm": 254,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-L-UP-02",
+              "row": 1,
+              "col": 2,
+              "width_mm": 1800,
+              "height_mm": 254,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-L-UP-03",
+              "row": 1,
+              "col": 3,
+              "width_mm": 1800,
+              "height_mm": 254,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-L-UP-04",
+              "row": 1,
+              "col": 4,
+              "width_mm": 1800,
+              "height_mm": 254,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-L-UP-05",
+              "row": 1,
+              "col": 5,
+              "width_mm": 1800,
+              "height_mm": 254,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-L-UP-06",
+              "row": 1,
+              "col": 6,
+              "width_mm": 1800,
+              "height_mm": 254,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-L-UP-07",
+              "row": 1,
+              "col": 7,
+              "width_mm": 1800,
+              "height_mm": 254,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-L-UP-08",
+              "row": 1,
+              "col": 8,
+              "width_mm": 1800,
+              "height_mm": 254,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-L-UP-09",
+              "row": 1,
+              "col": 9,
+              "width_mm": 1800,
+              "height_mm": 254,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-L-UP-10",
+              "row": 1,
+              "col": 10,
+              "width_mm": 1800,
+              "height_mm": 254,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-L-UP-11",
+              "row": 1,
+              "col": 11,
+              "width_mm": 1800,
+              "height_mm": 254,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-L-UP-12",
+              "row": 1,
+              "col": 12,
+              "width_mm": 1700,
+              "height_mm": 254,
+              "type": "カット",
+              "orientation": "横",
+              "cut_note": "端数1700mm"
+            }
+          ],
+          "separators": {
+            "type": "C型",
+            "diameter": "2分5厘",
+            "pitch_h_mm": 600,
+            "rows": 1,
+            "row_positions_mm": [
+              127
+            ],
+            "edge_margin_mm": 150,
+            "count": 37
+          }
+        },
+        {
+          "id": "AB-R-LOW",
+          "name": "アバット側 右側面（下部600mm）",
+          "face_type": "side",
+          "width_mm": 21500,
+          "height_mm": 600,
+          "finish": "打放し",
+          "layout_method": "連続",
+          "panel_orientation": "横",
+          "panel_width_mm": 1800,
+          "panel_height_mm": 600,
+          "note": "AB-L-LOWと対称",
+          "panels": [
+            {
+              "id": "AB-R-LOW-01",
+              "row": 1,
+              "col": 1,
+              "width_mm": 1800,
+              "height_mm": 600,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-R-LOW-02",
+              "row": 1,
+              "col": 2,
+              "width_mm": 1800,
+              "height_mm": 600,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-R-LOW-03",
+              "row": 1,
+              "col": 3,
+              "width_mm": 1800,
+              "height_mm": 600,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-R-LOW-04",
+              "row": 1,
+              "col": 4,
+              "width_mm": 1800,
+              "height_mm": 600,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-R-LOW-05",
+              "row": 1,
+              "col": 5,
+              "width_mm": 1800,
+              "height_mm": 600,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-R-LOW-06",
+              "row": 1,
+              "col": 6,
+              "width_mm": 1800,
+              "height_mm": 600,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-R-LOW-07",
+              "row": 1,
+              "col": 7,
+              "width_mm": 1800,
+              "height_mm": 600,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-R-LOW-08",
+              "row": 1,
+              "col": 8,
+              "width_mm": 1800,
+              "height_mm": 600,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-R-LOW-09",
+              "row": 1,
+              "col": 9,
+              "width_mm": 1800,
+              "height_mm": 600,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-R-LOW-10",
+              "row": 1,
+              "col": 10,
+              "width_mm": 1800,
+              "height_mm": 600,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-R-LOW-11",
+              "row": 1,
+              "col": 11,
+              "width_mm": 1800,
+              "height_mm": 600,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-R-LOW-12",
+              "row": 1,
+              "col": 12,
+              "width_mm": 1700,
+              "height_mm": 600,
+              "type": "カット",
+              "orientation": "横",
+              "cut_note": "端数1700mm"
+            }
+          ],
+          "separators": {
+            "type": "C型",
+            "diameter": "2分5厘",
+            "pitch_h_mm": 600,
+            "rows": 1,
+            "row_positions_mm": [
+              300
+            ],
+            "edge_margin_mm": 150,
+            "count": 37
+          }
+        },
+        {
+          "id": "AB-R-HAUNCH",
+          "name": "アバット側 右ハンチ面（100×100 45°）",
+          "face_type": "haunch",
+          "width_mm": 21500,
+          "height_mm": 141,
+          "actual_dimensions": {
+            "horizontal_mm": 100,
+            "vertical_mm": 100,
+            "angle_deg": 45,
+            "development_mm": 141
+          },
+          "finish": "打放し",
+          "layout_method": "連続",
+          "panel_orientation": "横",
+          "panel_width_mm": 1800,
+          "panel_height_mm": 141,
+          "note": "AB-L-HAUNCHと対称",
+          "panels": [
+            {
+              "id": "AB-R-H-01",
+              "row": 1,
+              "col": 1,
+              "width_mm": 1800,
+              "height_mm": 141,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-R-H-02",
+              "row": 1,
+              "col": 2,
+              "width_mm": 1800,
+              "height_mm": 141,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-R-H-03",
+              "row": 1,
+              "col": 3,
+              "width_mm": 1800,
+              "height_mm": 141,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-R-H-04",
+              "row": 1,
+              "col": 4,
+              "width_mm": 1800,
+              "height_mm": 141,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-R-H-05",
+              "row": 1,
+              "col": 5,
+              "width_mm": 1800,
+              "height_mm": 141,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-R-H-06",
+              "row": 1,
+              "col": 6,
+              "width_mm": 1800,
+              "height_mm": 141,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-R-H-07",
+              "row": 1,
+              "col": 7,
+              "width_mm": 1800,
+              "height_mm": 141,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-R-H-08",
+              "row": 1,
+              "col": 8,
+              "width_mm": 1800,
+              "height_mm": 141,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-R-H-09",
+              "row": 1,
+              "col": 9,
+              "width_mm": 1800,
+              "height_mm": 141,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-R-H-10",
+              "row": 1,
+              "col": 10,
+              "width_mm": 1800,
+              "height_mm": 141,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-R-H-11",
+              "row": 1,
+              "col": 11,
+              "width_mm": 1800,
+              "height_mm": 141,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-R-H-12",
+              "row": 1,
+              "col": 12,
+              "width_mm": 1700,
+              "height_mm": 141,
+              "type": "カット",
+              "orientation": "横",
+              "cut_note": "端数1700mm"
+            }
+          ],
+          "separators": null,
+          "support": {
+            "method": "下部側面型枠と桟木で固定"
+          }
+        },
+        {
+          "id": "AB-R-UP",
+          "name": "アバット側 右側面（上部254mm）",
+          "face_type": "side",
+          "width_mm": 21500,
+          "height_mm": 254,
+          "finish": "打放し",
+          "layout_method": "連続",
+          "panel_orientation": "横",
+          "panel_width_mm": 1800,
+          "panel_height_mm": 254,
+          "note": "AB-L-UPと対称",
+          "panels": [
+            {
+              "id": "AB-R-UP-01",
+              "row": 1,
+              "col": 1,
+              "width_mm": 1800,
+              "height_mm": 254,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-R-UP-02",
+              "row": 1,
+              "col": 2,
+              "width_mm": 1800,
+              "height_mm": 254,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-R-UP-03",
+              "row": 1,
+              "col": 3,
+              "width_mm": 1800,
+              "height_mm": 254,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-R-UP-04",
+              "row": 1,
+              "col": 4,
+              "width_mm": 1800,
+              "height_mm": 254,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-R-UP-05",
+              "row": 1,
+              "col": 5,
+              "width_mm": 1800,
+              "height_mm": 254,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-R-UP-06",
+              "row": 1,
+              "col": 6,
+              "width_mm": 1800,
+              "height_mm": 254,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-R-UP-07",
+              "row": 1,
+              "col": 7,
+              "width_mm": 1800,
+              "height_mm": 254,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-R-UP-08",
+              "row": 1,
+              "col": 8,
+              "width_mm": 1800,
+              "height_mm": 254,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-R-UP-09",
+              "row": 1,
+              "col": 9,
+              "width_mm": 1800,
+              "height_mm": 254,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-R-UP-10",
+              "row": 1,
+              "col": 10,
+              "width_mm": 1800,
+              "height_mm": 254,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-R-UP-11",
+              "row": 1,
+              "col": 11,
+              "width_mm": 1800,
+              "height_mm": 254,
+              "type": "カット",
+              "orientation": "横"
+            },
+            {
+              "id": "AB-R-UP-12",
+              "row": 1,
+              "col": 12,
+              "width_mm": 1700,
+              "height_mm": 254,
+              "type": "カット",
+              "orientation": "横",
+              "cut_note": "端数1700mm"
+            }
+          ],
+          "separators": {
+            "type": "C型",
+            "diameter": "2分5厘",
+            "pitch_h_mm": 600,
+            "rows": 1,
+            "row_positions_mm": [
+              127
+            ],
+            "edge_margin_mm": 150,
+            "count": 37
+          }
+        },
+        {
+          "id": "END-L",
+          "name": "端部 車道側（左端小口）",
+          "face_type": "end",
+          "width_mm": 800,
+          "height_mm": 954,
+          "finish": "打放し",
+          "layout_method": "1枚",
+          "note": "横桁左端の小口面。800×954mm。ハンチ形状を含む異形カット",
+          "panels": [
+            {
+              "id": "END-L-01",
+              "row": 1,
+              "col": 1,
+              "width_mm": 800,
+              "height_mm": 954,
+              "type": "異形カット",
+              "orientation": "縦",
+              "cut_note": "ハンチ形状反映。桁側200×200/アバット側100×100のハンチ線でカット"
+            }
+          ],
+          "separators": {
+            "type": "C型",
+            "diameter": "2分5厘",
+            "rows": 1,
+            "count": 2,
+            "note": "端太角で押さえ"
+          }
+        },
+        {
+          "id": "END-R",
+          "name": "端部 歩道側（右端小口）",
+          "face_type": "end",
+          "width_mm": 800,
+          "height_mm": 954,
+          "finish": "打放し",
+          "layout_method": "1枚",
+          "note": "END-Lと対称",
+          "panels": [
+            {
+              "id": "END-R-01",
+              "row": 1,
+              "col": 1,
+              "width_mm": 800,
+              "height_mm": 954,
+              "type": "異形カット",
+              "orientation": "縦",
+              "cut_note": "END-Lと対称形状"
+            }
+          ],
+          "separators": {
+            "type": "C型",
+            "diameter": "2分5厘",
+            "rows": 1,
+            "count": 2,
+            "note": "端太角で押さえ"
+          }
+        }
+      ]
+    }
+  ],
+  "quantities": {
+    "panels": {
+      "summary": [
+        {
+          "face": "BT-L/R(底面左右)",
+          "size": "250×1800",
+          "count": 22,
+          "area_m2": 9.9
+        },
+        {
+          "face": "BT-L/R(底面端数)",
+          "size": "250×1700",
+          "count": 2,
+          "area_m2": 0.85
+        },
+        {
+          "face": "GS-L/R-LOW(桁側下部)",
+          "size": "479×1800",
+          "count": 22,
+          "area_m2": 18.97
+        },
+        {
+          "face": "GS-L/R-LOW(桁側下部端数)",
+          "size": "479×1700",
+          "count": 2,
+          "area_m2": 1.63
+        },
+        {
+          "face": "GS-L/R-HAUNCH(桁側ハンチ)",
+          "size": "283×1800",
+          "count": 22,
+          "area_m2": 11.21
+        },
+        {
+          "face": "GS-L/R-HAUNCH(桁側ハンチ端数)",
+          "size": "283×1700",
+          "count": 2,
+          "area_m2": 0.96
+        },
+        {
+          "face": "GS-L/R-UP(桁側上部)",
+          "size": "50×1800",
+          "count": 22,
+          "area_m2": 1.98
+        },
+        {
+          "face": "GS-L/R-UP(桁側上部端数)",
+          "size": "50×1700",
+          "count": 2,
+          "area_m2": 0.17
+        },
+        {
+          "face": "AB-L/R-LOW(アバット下部)",
+          "size": "600×1800",
+          "count": 22,
+          "area_m2": 23.76
+        },
+        {
+          "face": "AB-L/R-LOW(アバット下部端数)",
+          "size": "600×1700",
+          "count": 2,
+          "area_m2": 2.04
+        },
+        {
+          "face": "AB-L/R-HAUNCH(アバットハンチ)",
+          "size": "141×1800",
+          "count": 22,
+          "area_m2": 5.58
+        },
+        {
+          "face": "AB-L/R-HAUNCH(アバットハンチ端数)",
+          "size": "141×1700",
+          "count": 2,
+          "area_m2": 0.48
+        },
+        {
+          "face": "AB-L/R-UP(アバット上部)",
+          "size": "254×1800",
+          "count": 22,
+          "area_m2": 10.06
+        },
+        {
+          "face": "AB-L/R-UP(アバット上部端数)",
+          "size": "254×1700",
+          "count": 2,
+          "area_m2": 0.86
+        },
+        {
+          "face": "END-L/R(端部小口)",
+          "size": "800×954異形",
+          "count": 2,
+          "area_m2": 1.53
+        }
+      ],
+      "total_panels": 170,
+      "total_area_m2": 89.98
+    },
+    "separators": {
+      "summary": [
+        {
+          "face": "GS-L/R-LOW(桁側下部)",
+          "type": "C型",
+          "count": 74
+        },
+        {
+          "face": "AB-L/R-LOW(アバット下部)",
+          "type": "C型",
+          "count": 74
+        },
+        {
+          "face": "AB-L/R-UP(アバット上部)",
+          "type": "C型",
+          "count": 74
+        },
+        {
+          "face": "END-L/R(端部)",
+          "type": "C型",
+          "count": 4
+        }
+      ],
+      "total_count": 226
+    },
+    "hardware": {
+      "formtie": {
+        "spec": "W5/16",
+        "count": 452,
+        "note": "全セパ226本×2"
+      },
+      "nut": {
+        "spec": "W5/16六角",
+        "count": 452
+      },
+      "washer": {
+        "spec": "W5/16用",
+        "count": 452
+      }
+    }
+  },
+  "notes": [
+    {
+      "category": "底面構成",
+      "content": "底面800mm=張出し250mm+鋼製下フランジ300mm+張出し250mm。下フランジ部は型枠不要"
+    },
+    {
+      "category": "桁側断面",
+      "content": "529mm垂直（下50mm鋼製型枠）→200×200ハンチ(45°)→50mm垂直→鋼桁ウェブ接合。木製型枠は479mm+283mm展開+50mm"
+    },
+    {
+      "category": "アバット側断面",
+      "content": "600mm垂直（全部木製）→100×100ハンチ(45°)→254mm垂直→上端。合計954mm"
+    },
+    {
+      "category": "ハンチ型枠",
+      "content": "斜め面はセパ不可。コンパネを斜めカットし、下部側面型枠の上端に突き合わせて桟木＋端太で固定"
+    },
+    {
+      "category": "鋼製型枠",
+      "content": "桁側の下端50mmに鋼製型枠あり。この部分は木製型枠不要"
+    },
+    {
+      "category": "吊り支持",
+      "content": "底面型枠は下から支持できない。鋼桁下フランジからL型アングル等で吊る"
+    },
+    {
+      "category": "S-2との違い",
+      "content": "S-2(A2側)は下フランジ730×12mm。本体幅・張出し寸法が異なるため別途JSON作成必要"
+    }
+  ]
+}

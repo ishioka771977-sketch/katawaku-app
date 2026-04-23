@@ -46,6 +46,100 @@ let _3dDataVersion = 0;  // incremented on each data load
 let _3dRenderedVersion = -1;  // tracks which version is rendered
 
 // ============================================================
+// Saved Projects (localStorage)
+// ============================================================
+const STORAGE_KEY = 'katachi_saved_projects';
+
+function getSavedProjects() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  } catch { return []; }
+}
+
+function saveProject(data) {
+  const projects = getSavedProjects();
+  const p = data.project || {};
+  const s = data.structure || {};
+  const name = p.name || s.name || '無名工事';
+  const structName = s.name || '';
+  const type = s.type || '';
+
+  // 同じ工事名+構造物名があれば上書き、なければ追加
+  const key = name + '::' + structName;
+  const idx = projects.findIndex(pr => (pr.projectName + '::' + pr.structName) === key);
+  const entry = {
+    projectName: name,
+    structName: structName,
+    type: type,
+    savedAt: new Date().toISOString(),
+    json: JSON.stringify(data)
+  };
+
+  if (idx >= 0) {
+    projects[idx] = entry;
+  } else {
+    projects.unshift(entry); // 新しいものを先頭に
+  }
+
+  // 最大20件に制限
+  while (projects.length > 20) projects.pop();
+
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+  } catch (e) {
+    console.warn('保存に失敗（容量不足の可能性）:', e);
+  }
+}
+
+function deleteSavedProject(index) {
+  const projects = getSavedProjects();
+  projects.splice(index, 1);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+  renderSavedProjects();
+}
+
+function loadSavedProject(index) {
+  const projects = getSavedProjects();
+  if (!projects[index]) return;
+  try {
+    const data = JSON.parse(projects[index].json);
+    document.getElementById('jsonInput').value = projects[index].json;
+    initApp(data);
+  } catch (e) {
+    alert('保存データの読込みに失敗: ' + e.message);
+  }
+}
+
+function renderSavedProjects() {
+  const container = document.getElementById('savedProjectsList');
+  if (!container) return;
+  const projects = getSavedProjects();
+
+  if (projects.length === 0) {
+    container.innerHTML = '<p style="color:#999;font-size:12px;padding:8px 0">保存済みの工事はありません</p>';
+    return;
+  }
+
+  let html = '<ul class="sample-list">';
+  projects.forEach((pr, i) => {
+    const dt = new Date(pr.savedAt);
+    const dateStr = dt.toLocaleDateString('ja-JP') + ' ' + dt.toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit'});
+    const typeLabel = getTypeLabel(pr.type) || pr.type;
+    html += `<li>
+      <span class="sample-type">${esc(typeLabel)}</span>
+      <span style="flex:1">
+        <span style="font-weight:bold">${esc(pr.structName || pr.projectName)}</span>
+        <br><span style="font-size:11px;color:#999">${esc(dateStr)}</span>
+      </span>
+      <button class="btn btn-success btn-sm" onclick="loadSavedProject(${i})">開く</button>
+      <button class="btn btn-sm" style="background:#e74c3c;color:#fff;font-size:11px" onclick="if(confirm('削除しますか？'))deleteSavedProject(${i})">×</button>
+    </li>`;
+  });
+  html += '</ul>';
+  container.innerHTML = html;
+}
+
+// ============================================================
 // JSON Loading
 // ============================================================
 async function loadSample(filename) {
@@ -93,6 +187,9 @@ function loadFile(e) {
 function initApp(data) {
   appData = data;
   _3dDataVersion++;
+
+  // 自動保存
+  saveProject(data);
 
   // Detect structure type
   const structType = data.structure?.type || 'unknown';

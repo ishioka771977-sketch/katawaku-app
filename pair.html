@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>機器ペアリング — 型知</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/config.js"></script>
+<script src="/auth.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'BIZ UDPGothic', 'Meiryo', sans-serif;
+  background: #f5f5f5;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  padding: 32px;
+  max-width: 400px;
+  width: 100%;
+}
+h1 { font-size: 20px; color: #1a5276; text-align: center; margin-bottom: 4px; }
+.subtitle { font-size: 13px; color: #888; text-align: center; margin-bottom: 20px; }
+.form-group { margin-bottom: 14px; }
+label { display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 6px; }
+input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 16px;
+}
+input[type="text"].code-input {
+  text-align: center;
+  font-family: monospace;
+  font-size: 24px;
+  letter-spacing: 0.3em;
+}
+.btn {
+  width: 100%;
+  padding: 14px;
+  background: #1a5276;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.error { background: #fee; color: #c0392b; padding: 10px; border-radius: 8px; font-size: 13px; margin-top: 8px; }
+.success { background: #efe; color: #27ae60; padding: 10px; border-radius: 8px; font-size: 13px; margin-top: 8px; }
+.info { background: #eef; color: #1a5276; padding: 10px; border-radius: 8px; font-size: 13px; margin-bottom: 16px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>機器ペアリング</h1>
+    <p class="subtitle">石岡組アプリに自分の機器を登録します</p>
+
+    <div id="qrInfo" class="info" style="display:none">
+      QRコードを読み取りました。下のボタンで登録を完了してください。
+    </div>
+
+    <div id="codeForm">
+      <div class="form-group">
+        <label>社員番号（4桁）</label>
+        <input type="text" id="empNum" maxlength="4" placeholder="例: 0015" inputmode="numeric" style="text-align:center;font-family:monospace;font-size:20px">
+      </div>
+      <div class="form-group">
+        <label>6桁コード</label>
+        <input type="text" id="code" maxlength="6" placeholder="例: 123456" class="code-input" inputmode="numeric">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>この機器の名前</label>
+      <input type="text" id="deviceLabel" placeholder="例: iPhone">
+    </div>
+
+    <button class="btn" id="submitBtn" onclick="submit()">ペアリング</button>
+    <div id="error" class="error" style="display:none"></div>
+    <div id="success" class="success" style="display:none"></div>
+  </div>
+
+<script>
+const qs = new URLSearchParams(window.location.search);
+const qrToken = qs.get('q');
+
+// UA ベースでデフォルト機器名
+const ua = navigator.userAgent;
+let defaultLabel = 'このブラウザ';
+if (/iPhone/.test(ua)) defaultLabel = 'iPhone';
+else if (/iPad/.test(ua)) defaultLabel = 'iPad';
+else if (/Android/.test(ua)) defaultLabel = 'Android端末';
+else if (/Mac/.test(ua)) defaultLabel = 'Mac';
+else if (/Windows/.test(ua)) defaultLabel = 'Windows PC';
+document.getElementById('deviceLabel').value = defaultLabel;
+
+// QR経由
+if (qrToken) {
+  document.getElementById('qrInfo').style.display = '';
+  document.getElementById('codeForm').style.display = 'none';
+  document.getElementById('submitBtn').textContent = 'この機器を登録する';
+}
+
+const ERR_MSG = {
+  'invalid_code': 'コードが正しくありません',
+  'expired': 'コードの有効期限が切れています（5分）',
+  'employee_mismatch': '社員番号とコードの組み合わせが違います',
+  'inactive_user': 'このアカウントは無効になっています',
+  'device_create_failed': '機器の登録に失敗しました',
+};
+
+async function submit() {
+  const btn = document.getElementById('submitBtn');
+  const errEl = document.getElementById('error');
+  const okEl = document.getElementById('success');
+  errEl.style.display = 'none';
+  okEl.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'ペアリング中...';
+
+  try {
+    const deviceLabel = document.getElementById('deviceLabel').value;
+    let result;
+    if (qrToken) {
+      result = await window.authQrPair(qrToken, deviceLabel);
+    } else {
+      const empNum = document.getElementById('empNum').value.trim();
+      const code = document.getElementById('code').value.trim();
+      if (!empNum || !code) {
+        errEl.textContent = '社員番号と6桁コードを入力してください';
+        errEl.style.display = '';
+        return;
+      }
+      result = await window.authPair(empNum, code, deviceLabel);
+    }
+
+    if (result.error) {
+      errEl.textContent = ERR_MSG[result.error] || result.error;
+      errEl.style.display = '';
+    } else {
+      okEl.textContent = `${result.user.displayName} さんとしてペアリング成功！`;
+      okEl.style.display = '';
+      setTimeout(() => { window.location.replace('/'); }, 1500);
+    }
+  } finally {
+    btn.disabled = false;
+    btn.textContent = qrToken ? 'この機器を登録する' : 'ペアリング';
+  }
+}
+</script>
+</body>
+</html>

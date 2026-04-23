@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>型知 KATACHI — 型枠割付アプリ</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/config.js"></script>
+<script src="/auth.js"></script>
+<script>
+// 認証チェック: 未ログインならlogin.htmlへリダイレクト
+(async () => { await authGuard(); })();
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -100,6 +107,7 @@ body{font-family:'BIZ UDPGothic','Meiryo',sans-serif;background:#f5f5f5;color:#3
   <div class="btn-group no-print">
     <button class="btn btn-success" onclick="exportPDF()" id="btnPdf" disabled>PDF出力(A3)</button>
     <button class="btn btn-warning" onclick="exportExcel()" id="btnExcel" disabled>Excel出力</button>
+    <button class="btn" style="background:#e74c3c;color:#fff;margin-left:12px" onclick="authLogout().then(()=>location.href='/login.html')">ログアウト</button>
   </div>
 </header>
 
@@ -149,6 +157,14 @@ body{font-family:'BIZ UDPGothic','Meiryo',sans-serif;background:#f5f5f5;color:#3
                 <input type="file" accept=".json" style="display:none" onchange="loadFile(event)">
               </label>
             </div>
+          </div>
+        </div>
+
+        <!-- Saved projects -->
+        <div class="card" style="max-width:640px;margin:20px auto 0;text-align:left">
+          <div class="card-header">保存済み工事</div>
+          <div class="card-body" id="savedProjectsList">
+            <!-- renderSavedProjects() で動的生成 -->
           </div>
         </div>
 
@@ -219,5 +235,6 @@ body{font-family:'BIZ UDPGothic','Meiryo',sans-serif;background:#f5f5f5;color:#3
 <script src="modules/box_culvert.js"></script>
 <script src="modules/retaining_wall.js"></script>
 <script src="modules/foundation.js"></script>
+<script>renderSavedProjects();</script>
 </body>
 </html>

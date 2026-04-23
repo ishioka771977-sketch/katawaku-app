@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理者ログイン — 型知</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/config.js"></script>
+<script src="/auth.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'BIZ UDPGothic', 'Meiryo', sans-serif;
+  background: #f8fafc;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.card {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+  padding: 2rem;
+  max-width: 28rem;
+  width: 100%;
+}
+h1 { font-size: 1.5rem; text-align: center; margin-bottom: 0.5rem; }
+.subtitle { font-size: 0.875rem; color: #6b7280; text-align: center; margin-bottom: 1.5rem; }
+label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.25rem; }
+input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  text-align: center;
+  font-family: monospace;
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+}
+.error {
+  font-size: 0.875rem;
+  color: #dc2626;
+  background: #fef2f2;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+button {
+  width: 100%;
+  padding: 0.75rem;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+.hint { font-size: 0.75rem; color: #9ca3af; text-align: center; margin-top: 1.5rem; }
+.hint a { color: #2563eb; text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>管理者ログイン</h1>
+  <p class="subtitle">管理者（社員番号0001）のみ利用可能</p>
+  <form id="loginForm">
+    <label>社員番号（4桁）</label>
+    <input id="empNum" type="text" inputmode="numeric" maxlength="4" placeholder="0001" autofocus required>
+    <div id="error" class="error" style="display:none;"></div>
+    <button id="submitBtn" type="submit">ログイン</button>
+  </form>
+  <p class="hint">一般社員は <a href="/pair.html">機器ペアリング</a> から登録してください</p>
+</div>
+<script>
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const empNum = document.getElementById('empNum').value.trim();
+  const btn = document.getElementById('submitBtn');
+  const errDiv = document.getElementById('error');
+  errDiv.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'ログイン中…';
+  try {
+    const res = await fetch(`${AUTH_API_BASE}/api/auth/device-login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ employeeNumber: empNum, appName: 'katachi' }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      const m = {
+        admin_only: '管理者のみ利用できます',
+        app_not_allowed: 'このアプリの利用権限がありません',
+        session_issue_failed: 'セッション発行に失敗しました',
+      };
+      errDiv.textContent = m[data.error] || 'ログインに失敗しました';
+      errDiv.style.display = 'block';
+      return;
+    }
+    if (data.deviceToken) saveDeviceToken(data.deviceToken);
+    window.location.href = '/';
+  } catch (err) {
+    errDiv.textContent = '通信エラー';
+    errDiv.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'ログイン';
+  }
+});
+</script>
+</body>
+</html>
