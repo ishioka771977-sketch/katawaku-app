@@ -306,6 +306,7 @@ project_name: ${projName}
 project_slug: ${projSlug}
 struct_type: ${structLabel}
 struct_slug: ${structSlug}
+app: katachi
 source: note_input
 ---
 
