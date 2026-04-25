@@ -152,3 +152,4 @@ window.authPair = performPairing;
 window.authQrPair = performQrPairing;
 window.authGuestAccess = performGuestAccess;
 window.clearDeviceTokens = clearDeviceTokens;
+window.getSb = getSb;  // knowledge-base.js から Storage 呼び出しに使用
