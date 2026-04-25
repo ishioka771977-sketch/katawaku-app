@@ -19,6 +19,7 @@ drop policy if exists "kb_select_authenticated" on storage.objects;
 drop policy if exists "kb_insert_field_notes" on storage.objects;
 drop policy if exists "kb_update_field_notes" on storage.objects;
 drop policy if exists "kb_write_core_admin" on storage.objects;
+drop policy if exists "kb_write_projects" on storage.objects;
 
 -- 2-1) 読み取り: 認証済みユーザーなら全ファイル閲覧可
 create policy "kb_select_authenticated"
@@ -49,6 +50,20 @@ with check (
   and (storage.foldername(name))[1] = 'field_notes'
 );
 
+-- 2-5) projects/ への読み書き: 認証済みユーザーなら誰でもOK
+--      （フィールドノート入力機能 v3.3 で使用、型枠JSON保存先）
+create policy "kb_write_projects"
+on storage.objects for all
+to authenticated
+using (
+  bucket_id = 'knowledge-base'
+  and (storage.foldername(name))[1] = 'projects'
+)
+with check (
+  bucket_id = 'knowledge-base'
+  and (storage.foldername(name))[1] = 'projects'
+);
+
 -- 2-4) core/ の書込み（挿入・更新・削除）: 管理者のみ
 --     profiles.role = 'admin' で判定
 --     ※ profiles テーブルの構造は石岡組 Auth システムに合わせること
@@ -59,7 +74,7 @@ using (
   bucket_id = 'knowledge-base'
   and (storage.foldername(name))[1] = 'core'
   and exists (
-    select 1 from public.profiles p
+    select 1 from public.users_profile p
     where p.id = auth.uid() and p.role = 'admin'
   )
 )
@@ -67,7 +82,7 @@ with check (
   bucket_id = 'knowledge-base'
   and (storage.foldername(name))[1] = 'core'
   and exists (
-    select 1 from public.profiles p
+    select 1 from public.users_profile p
     where p.id = auth.uid() and p.role = 'admin'
   )
 );

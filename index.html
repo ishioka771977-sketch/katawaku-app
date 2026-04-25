@@ -105,6 +105,7 @@ body{font-family:'BIZ UDPGothic','Meiryo',sans-serif;background:#f5f5f5;color:#3
     <div class="subtitle">型枠の知識を知恵として形にする ｜ JSON → 割付図 → PDF/Excel</div>
   </div>
   <div class="btn-group no-print">
+    <button class="btn" style="background:#9b59b6;color:#fff" onclick="niOpenModal()">📝 ノート貼り付け</button>
     <button class="btn btn-success" onclick="exportPDF()" id="btnPdf" disabled>PDF出力(A3)</button>
     <button class="btn btn-warning" onclick="exportExcel()" id="btnExcel" disabled>Excel出力</button>
     <button class="btn" style="background:#e74c3c;color:#fff;margin-left:12px" onclick="authLogout().then(()=>location.href='/login.html')">ログアウト</button>
@@ -192,14 +193,11 @@ body{font-family:'BIZ UDPGothic','Meiryo',sans-serif;background:#f5f5f5;color:#3
               <button class="btn btn-primary" id="btnKbSetup" onclick="kbSetupKurotan()">
                 🐣 くろたんセットアップ（クリップボードにコピー）
               </button>
-              <button class="btn btn-success" onclick="kbOpenRegisterModal()">
-                📝 知見を登録
-              </button>
             </div>
             <p style="font-size:11px;color:#888;margin-top:8px;line-height:1.6">
               「セットアップ」を押すと Supabase から知見を集めてクリップボードにコピーします。<br>
               Claude Pro の新規チャットに貼り付けてください。<br>
-              「知見を登録」はチャットで得た知見サマリーを <code>field_notes/</code> に保存します。
+              チャットで得た知見・打合せメモ・現場記録は、画面上部の <b>「📝 ノート貼り付け」</b> ボタンから取り込めます（JSON自動分離）。
             </p>
           </div>
         </div>
@@ -272,26 +270,57 @@ body{font-family:'BIZ UDPGothic','Meiryo',sans-serif;background:#f5f5f5;color:#3
 <script src="modules/retaining_wall.js"></script>
 <script src="modules/foundation.js"></script>
 <script src="knowledge-base.js"></script>
+<script src="note-input.js"></script>
 <script>renderSavedProjects();</script>
 
-<!-- 知見登録モーダル -->
-<div id="kbRegisterModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
-  <div style="background:#fff;border-radius:8px;padding:20px;max-width:720px;width:92%;max-height:90vh;overflow:auto;box-shadow:0 8px 32px rgba(0,0,0,.3)">
+<!-- 📝 ノート貼り付けモーダル (Phase 1) -->
+<div id="niModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:8px;padding:20px;max-width:780px;width:94%;max-height:92vh;overflow:auto;box-shadow:0 8px 32px rgba(0,0,0,.3)">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;border-bottom:1px solid #eee;padding-bottom:10px">
-      <h3 style="font-size:16px;color:#1a5276">📝 知見を登録</h3>
-      <button class="btn btn-sm" style="background:#ccc" onclick="kbCloseRegisterModal()">✕ 閉じる</button>
+      <h3 style="font-size:16px;color:#1a5276">📝 フィールドノート入力</h3>
+      <button class="btn btn-sm" style="background:#ccc" onclick="niCloseModal()">✕ キャンセル</button>
     </div>
-    <p style="font-size:12px;color:#666;margin-bottom:6px;line-height:1.6">
-      くろたん（Claude Pro）が出力した「知見サマリー」を貼り付けてください。<br>
-      <code>---知見サマリー開始---</code> 〜 <code>---知見サマリー終了---</code> の間を自動抽出します。
+
+    <!-- プロジェクト/構造種別 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div>
+        <label style="font-size:12px;color:#666;display:block;margin-bottom:3px">プロジェクト名</label>
+        <select id="niProjectSelect" onchange="document.getElementById('niProjectFreeInput').placeholder = this.value || '新規プロジェクト名を入力'"
+          style="width:100%;font-size:13px;padding:6px 8px;border:1px solid #ddd;border-radius:4px;margin-bottom:4px"></select>
+        <input type="text" id="niProjectFreeInput" placeholder="新規プロジェクト名を入力（既存を選択した場合は空でOK）"
+          style="width:100%;font-size:13px;padding:6px 8px;border:1px solid #ddd;border-radius:4px">
+      </div>
+      <div>
+        <label style="font-size:12px;color:#666;display:block;margin-bottom:3px">構造種別</label>
+        <select id="niStructSelect" style="width:100%;font-size:13px;padding:6px 8px;border:1px solid #ddd;border-radius:4px">
+          <option value="deck_slab">床版</option>
+          <option value="parapet_curb_and_barrier">地覆・壁高欄</option>
+          <option value="retaining_wall">擁壁</option>
+          <option value="abutment">橋台</option>
+          <option value="pier">橋脚</option>
+          <option value="box_culvert">BOXカルバート</option>
+          <option value="foundation">基礎</option>
+        </select>
+      </div>
+    </div>
+
+    <p style="font-size:12px;color:#666;margin:8px 0 4px;line-height:1.6">
+      打合せメモ・現場記録・くろたんとの壁打ち結果をまるごと貼り付けてください。<br>
+      <code>```json ... ```</code> ブロックや生 <code>{ ... }</code> を自動抽出します。
     </p>
-    <p id="kbRegisterHint" style="font-size:11px;color:#888;margin-bottom:8px"></p>
-    <textarea id="kbRegisterTextarea"
-      placeholder="ここにくろたんからの知見サマリーを貼り付け（---知見サマリー開始--- ... ---知見サマリー終了---）"
-      style="width:100%;height:280px;font-family:'Consolas','MS Gothic',monospace;font-size:12px;border:1px solid #ddd;border-radius:4px;padding:8px;resize:vertical"></textarea>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;gap:12px">
-      <div id="kbRegisterStatus" style="font-size:12px;color:#666;flex:1"></div>
-      <button class="btn btn-success" onclick="kbRegisterKnowledge()">Supabase に登録</button>
+
+    <textarea id="niTextarea"
+      placeholder="ここに打合せメモや現場記録をまるごと貼り付け（JSONとテキストが混在していてOK）"
+      style="width:100%;height:240px;font-family:'Consolas','MS Gothic',monospace;font-size:12px;border:1px solid #ddd;border-radius:4px;padding:8px;resize:vertical"></textarea>
+
+    <div id="niPreview" style="display:none;margin-top:10px;border-top:1px solid #eee;padding-top:10px"></div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;gap:10px;flex-wrap:wrap">
+      <div id="niStatus" style="font-size:12px;color:#666;flex:1;min-width:200px"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" style="background:#ddd;color:#333" onclick="niShowPreview()">プレビュー</button>
+        <button class="btn btn-success" onclick="niSubmit()">取り込む</button>
+      </div>
     </div>
   </div>
 </div>
