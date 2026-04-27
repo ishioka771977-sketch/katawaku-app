@@ -317,18 +317,47 @@ async function waitForAuth(maxWaitMs) {
   console.warn('[smd] auth wait timeout');
   return false;
 }
+// 画面に診断情報を表示する関数
+function smdShowDiagnostic(lines) {
+  const hint = document.getElementById('smdHint');
+  if (!hint) return;
+  hint.innerHTML = `<div style="background:#fff3cd;border:1px solid #f39c12;padding:6px 10px;border-radius:4px;font-size:11px;font-family:Consolas,monospace;color:#333;line-height:1.5">${lines.map(l => l.replace(/</g,'&lt;')).join('<br>')}</div>`;
+}
+
 (async function smdInit() {
   console.log('[smd] init start, waiting for auth...');
+  smdShowDiagnostic(['[診断] init start...']);
   const ok = await waitForAuth();
-  console.log('[smd] auth wait result:', ok, 'sb:', !!window.getSb?.(), '__ishiokaAuth:', window.__ishiokaAuth);
-  // 認証タイムアウトしてもバッジ表示の試行はする (ヒント空白を避ける)
+  const sb = window.getSb?.();
+  const authObj = window.__ishiokaAuth;
+  console.log('[smd] auth wait result:', ok, 'sb:', !!sb, '__ishiokaAuth:', authObj);
+
+  let diagnostic = [
+    `auth wait: ${ok ? 'OK' : 'TIMEOUT'}`,
+    `sb client: ${sb ? 'OK' : 'NG'}`,
+    `__ishiokaAuth: ${authObj ? 'set (' + (authObj.profile?.employee_number || '?') + ')' : 'null'}`,
+  ];
+
+  if (sb) {
+    try {
+      const r = await sb.from('setup_md_versions').select('version_number, created_at').eq('app', 'katachi').order('version_number', { ascending: false });
+      if (r.error) diagnostic.push(`SELECT err: ${r.error.message}`);
+      else diagnostic.push(`SELECT OK: ${r.data?.length || 0}件 (最新v${r.data?.[0]?.version_number || '?'})`);
+    } catch (e) {
+      diagnostic.push(`SELECT throw: ${e.message || e}`);
+    }
+  }
+  smdShowDiagnostic(diagnostic);
+
   if (window.smdRenderBadge) {
     try {
-      await window.smdRenderBadge('btnSmdFetch', 'smdHint', 'katachi');
+      // 5秒後にバッジ表示に切り替え
+      setTimeout(async () => {
+        try { await window.smdRenderBadge('btnSmdFetch', 'smdHint', 'katachi'); }
+        catch(e) { console.error(e); }
+      }, 5000);
     } catch (e) {
       console.error('[smd] renderBadge err', e);
-      const hint = document.getElementById('smdHint');
-      if (hint) hint.innerHTML = `<span style="color:#c0392b">エラー: ${e.message || e}</span>`;
     }
   }
   if (window.fnpAutoMoveCompletedPool) {
