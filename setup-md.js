@@ -61,10 +61,19 @@ async function smdGetBadgeInfo(app = 'katachi') {
 
 // ── アプリ起動時のヘッダー初期化 ────────────────────
 async function smdRenderBadge(buttonId, hintId, app = 'katachi') {
-  const info = await smdGetBadgeInfo(app);
   const btn = document.getElementById(buttonId);
   const hint = document.getElementById(hintId);
-  if (!btn) return;
+  if (!btn) { console.warn('[smd] btn not found:', buttonId); return; }
+
+  let info;
+  try {
+    info = await smdGetBadgeInfo(app);
+  } catch (e) {
+    console.error('[smd] getBadgeInfo failed', e);
+    if (hint) hint.innerHTML = `<span style="color:#c0392b">取得失敗: ${e.message || e}</span>`;
+    return;
+  }
+  console.log('[smd] badge info:', info);
 
   // ボタンに NEW バッジを付ける
   btn.innerHTML = info.hasNew
@@ -73,7 +82,6 @@ async function smdRenderBadge(buttonId, hintId, app = 'katachi') {
 
   if (hint) {
     if (info.version === 0) {
-      // sbが取れているのに 0 件 = 本当に未登録、sb未初期化なら別メッセージ
       const sb = smdSb();
       hint.innerHTML = sb
         ? `<span style="color:#999">まだ登録されていません</span>`

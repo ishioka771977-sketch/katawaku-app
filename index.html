@@ -318,19 +318,26 @@ async function waitForAuth(maxWaitMs) {
   return false;
 }
 (async function smdInit() {
+  console.log('[smd] init start, waiting for auth...');
   const ok = await waitForAuth();
-  if (!ok) return;
-  console.log('[smd] auth ready, fetching badge info...');
+  console.log('[smd] auth wait result:', ok, 'sb:', !!window.getSb?.(), '__ishiokaAuth:', window.__ishiokaAuth);
+  // 認証タイムアウトしてもバッジ表示の試行はする (ヒント空白を避ける)
   if (window.smdRenderBadge) {
     try {
       await window.smdRenderBadge('btnSmdFetch', 'smdHint', 'katachi');
     } catch (e) {
       console.error('[smd] renderBadge err', e);
+      const hint = document.getElementById('smdHint');
+      if (hint) hint.innerHTML = `<span style="color:#c0392b">エラー: ${e.message || e}</span>`;
     }
   }
   if (window.fnpAutoMoveCompletedPool) {
-    const r = await window.fnpAutoMoveCompletedPool();
-    if (r.moved > 0) console.log(`[smd] auto-moved ${r.moved} projects to completed_pool`);
+    try {
+      const r = await window.fnpAutoMoveCompletedPool();
+      if (r.moved > 0) console.log(`[smd] auto-moved ${r.moved} projects to completed_pool`);
+    } catch (e) {
+      console.warn('[smd] autoMove err', e);
+    }
   }
 })();
 </script>
