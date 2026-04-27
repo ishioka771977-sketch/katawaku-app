@@ -9,6 +9,8 @@
 <script src="/auth.js"></script>
 <script>(async () => { await authGuard(); })();</script>
 <script src="/project-master.js"></script>
+<script src="/setup-md.js"></script>
+<script src="/index-builder.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'BIZ UDPGothic','Meiryo',sans-serif;background:#f5f5f5;color:#333;font-size:14px;padding:20px}
@@ -45,7 +47,56 @@ input,select,textarea{font:inherit;padding:4px 6px;border:1px solid #ccc;border-
 <div class="toolbar">
   <button class="btn btn-primary" onclick="loadAll()">🔄 再読込</button>
   <button class="btn btn-success" onclick="rebuildIndexes()">🗂️ INDEX 再生成</button>
+  <button class="btn btn-warning" onclick="openInventoryExport()">📤 棚卸しエクスポート</button>
+  <button class="btn" style="background:#3498db;color:#fff" onclick="openSetupMdUpdate()">📋 セットアップmd更新</button>
   <span id="globalStatus" style="font-size:12px;color:#666;margin-left:10px"></span>
+</div>
+
+<!-- 棚卸しエクスポート モーダル -->
+<div id="invModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:8px;padding:20px;max-width:780px;width:94%;max-height:92vh;overflow:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;border-bottom:1px solid #eee;padding-bottom:8px">
+      <h3 style="font-size:15px;color:#f39c12">📤 棚卸しエクスポート</h3>
+      <button class="btn" style="background:#ccc" onclick="document.getElementById('invModal').style.display='none'">✕ 閉じる</button>
+    </div>
+    <p style="font-size:12px;color:#666;margin-bottom:8px">
+      対象（チェック済工事の最終版JSON + 知見サマリーをmdで出力）
+    </p>
+    <div id="invList" style="max-height:300px;overflow:auto;border:1px solid #eee;padding:8px;font-size:12px"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px">
+      <button class="btn btn-success" onclick="doInventoryExport()">Markdownでダウンロード</button>
+    </div>
+  </div>
+</div>
+
+<!-- セットアップmd更新 モーダル -->
+<div id="smuModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:8px;padding:20px;max-width:780px;width:94%;max-height:92vh;overflow:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;border-bottom:1px solid #eee;padding-bottom:8px">
+      <h3 style="font-size:15px;color:#3498db">📋 セットアップmd更新</h3>
+      <button class="btn" style="background:#ccc" onclick="document.getElementById('smuModal').style.display='none'">✕ 閉じる</button>
+    </div>
+    <div style="display:grid;gap:8px">
+      <label style="font-size:12px;color:#666">対象アプリ</label>
+      <select id="smuApp" style="font-size:13px;padding:5px 8px;border:1px solid #ccc;border-radius:3px">
+        <option value="katachi">katachi（型知）</option>
+        <option value="tetchi">tetchi（鉄知）</option>
+      </select>
+
+      <label style="font-size:12px;color:#666">新版md本文（中央くろたんで完成させたもの）</label>
+      <textarea id="smuContent" style="font-family:Consolas,monospace;font-size:11px;height:240px;border:1px solid #ccc;border-radius:3px;padding:8px" placeholder="貼り付け..."></textarea>
+
+      <label style="font-size:12px;color:#666">変更サマリー（NEWバッジで表示される）</label>
+      <textarea id="smuSummary" style="font-size:12px;height:60px;border:1px solid #ccc;border-radius:3px;padding:8px" placeholder="・擁壁の勾配セパ長計算式を追加&#10;・宿野辺橋の現場知見3件を反映"></textarea>
+
+      <label style="font-size:12px;color:#666">統合対象工事（チェック→ integrated に移動）</label>
+      <div id="smuTargets" style="max-height:120px;overflow:auto;border:1px solid #eee;padding:6px;font-size:12px"></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px">
+      <button class="btn btn-success" onclick="doSetupMdUpload()">アップロード</button>
+    </div>
+    <div id="smuStatus" style="font-size:12px;color:#666;margin-top:6px"></div>
+  </div>
 </div>
 
 <table id="projTable">
@@ -138,6 +189,80 @@ async function rebuildIndexes() {
   const r = await window.ibRebuildAllIndexes();
   if (r?.ok) setGlobalStatus(`✓ INDEX 再生成完了 (${r.paths.join(', ')})`, '#27ae60');
   else setGlobalStatus(`❌ ${r?.error || '失敗'}`, '#c0392b');
+}
+
+// ─── 棚卸しエクスポート ───────────────
+async function openInventoryExport() {
+  const projects = await window.pmListProjects();
+  const completed = projects.filter(p => p.status === 'completed_pool');
+  const list = document.getElementById('invList');
+  if (completed.length === 0) {
+    list.innerHTML = '<div style="color:#999">完成プールの工事はありません（工期完了予定日を過ぎた工事のみ対象）</div>';
+  } else {
+    list.innerHTML = completed.map(p => `
+      <label style="display:block;padding:4px 0">
+        <input type="checkbox" class="inv-cb" data-pid="${escAttr(p.project_id)}" checked>
+        <code>${escHtml(p.project_id)}</code> — ${escHtml(p.project_name)}
+        <span style="color:#888"> (${p.start_date || '-'} 〜 ${p.planned_end_date || '-'})</span>
+      </label>
+    `).join('');
+  }
+  document.getElementById('invModal').style.display = 'flex';
+}
+
+async function doInventoryExport() {
+  const ids = [...document.querySelectorAll('.inv-cb:checked')].map(cb => cb.dataset.pid);
+  if (ids.length === 0) { alert('1件以上選択してください'); return; }
+  setGlobalStatus('エクスポート中...');
+  const md = await window.smdBuildInventoryExport({ projectIds: ids });
+  if (!md) { setGlobalStatus('❌ エクスポート失敗', '#c0392b'); return; }
+  const today = new Date().toISOString().slice(0, 10);
+  const blob = new Blob([md], { type: 'text/markdown; charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `inventory_export_${today}.md`;
+  a.click();
+  setGlobalStatus(`✓ ${ids.length}件をエクスポート`, '#27ae60');
+  document.getElementById('invModal').style.display = 'none';
+}
+
+// ─── セットアップmd更新 ───────────────
+async function openSetupMdUpdate() {
+  const projects = await window.pmListProjects({ status: 'completed_pool' });
+  const targets = document.getElementById('smuTargets');
+  if (projects.length === 0) {
+    targets.innerHTML = '<div style="color:#999">統合対象（completed_pool）の工事はありません。空のままアップロードもOK。</div>';
+  } else {
+    targets.innerHTML = projects.map(p => `
+      <label style="display:block;padding:2px 0">
+        <input type="checkbox" class="smu-target" data-pid="${escAttr(p.project_id)}">
+        <code style="font-size:11px">${escHtml(p.project_id)}</code> — ${escHtml(p.project_name)}
+      </label>
+    `).join('');
+  }
+  document.getElementById('smuContent').value = '';
+  document.getElementById('smuSummary').value = '';
+  document.getElementById('smuStatus').textContent = '';
+  document.getElementById('smuModal').style.display = 'flex';
+}
+
+async function doSetupMdUpload() {
+  const app = document.getElementById('smuApp').value;
+  const content = document.getElementById('smuContent').value.trim();
+  const summary = document.getElementById('smuSummary').value.trim();
+  const ids = [...document.querySelectorAll('.smu-target:checked')].map(cb => cb.dataset.pid);
+  const st = document.getElementById('smuStatus');
+  if (!content) { st.textContent = '⚠ md本文が空です'; st.style.color = '#c0392b'; return; }
+  st.textContent = 'アップロード中...'; st.style.color = '#666';
+  try {
+    const rec = await window.smdUploadNewVersion({ app, mdContent: content, changeSummary: summary, integratedProjectIds: ids });
+    st.innerHTML = `✓ v${rec.version_number} アップロード完了 ${ids.length > 0 ? `（${ids.length}件を integrated に移動）` : ''}`;
+    st.style.color = '#27ae60';
+    setTimeout(() => { document.getElementById('smuModal').style.display = 'none'; loadAll(); }, 2000);
+  } catch (e) {
+    st.textContent = '❌ ' + (e.message || e);
+    st.style.color = '#c0392b';
+  }
 }
 
 function escHtml(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }

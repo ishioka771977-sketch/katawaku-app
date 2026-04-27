@@ -321,7 +321,43 @@ ${savedJsonPath ? `\n---\n\n## 関連JSONファイル\n\n- \`${savedJsonPath}\`�
     }
   }
 
-  // 3) INDEX 再生成
+  // 3) v3.4: json_versions テーブルにも INSERT（ファイルと並行）
+  if (savedJsonPath && json && window.fnpInsertJsonVersion) {
+    try {
+      await window.fnpInsertJsonVersion({
+        projectId,
+        app: NI_APP,
+        version: nextV,
+        filePath: savedJsonPath,
+        jsonContent: json,
+        createdBy: authorId,
+      });
+      results.push('✓ json_versions DB登録');
+    } catch (e) {
+      console.warn('[ni] json_versions insert err', e);
+    }
+  }
+
+  // 4) v3.4: 知見サマリー(field_note ブロック)があれば構造化して field_notes へ INSERT
+  if (window.fnpExtractAndParse && window.fnpInsertToDb) {
+    const blocks = window.fnpExtractAndParse(text);
+    if (blocks.length > 0) {
+      const fnRes = await window.fnpInsertToDb(blocks, {
+        app: NI_APP,
+        filePath: savedNotePath,
+        fallbackProjectId: projectId,
+        rawText: text,
+        createdBy: authorId,
+      });
+      if (fnRes.ok && fnRes.inserted > 0) {
+        results.push(`✓ 知見サマリー${fnRes.inserted}件保存`);
+      } else if (fnRes.failedToFallback) {
+        results.push(`⚠ 知見サマリー処理失敗（生データは退避済み）`);
+      }
+    }
+  }
+
+  // 5) INDEX 再生成
   if (savedJsonPath || savedNotePath) {
     niStatus('INDEX 更新中...', 'info');
     try {
