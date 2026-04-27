@@ -10,15 +10,26 @@ function smdSb() { return window.getSb ? window.getSb() : null; }
 
 // ── 最新版取得 ────────────────────────────────────
 async function smdGetLatest(app = 'katachi') {
-  const sb = smdSb(); if (!sb) return null;
+  const sb = smdSb();
+  if (!sb) {
+    console.warn('[smd] Supabase client 未初期化');
+    return null;
+  }
   const { data, error } = await sb.from(SMD_TABLE)
     .select('*')
     .eq('app', app)
     .order('version_number', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (error) { console.error('[smd] get err', error); return null; }
-  return data;
+    .limit(1);
+  if (error) {
+    console.error('[smd] get err', error.message, error);
+    return null;
+  }
+  if (!data || data.length === 0) {
+    console.log('[smd] no rows found for app=', app);
+    return null;
+  }
+  console.log('[smd] latest:', data[0].version_number, 'created_at:', data[0].created_at);
+  return data[0];
 }
 
 // ── 取得ボタン処理（クリップボードコピー）────────
@@ -62,7 +73,11 @@ async function smdRenderBadge(buttonId, hintId, app = 'katachi') {
 
   if (hint) {
     if (info.version === 0) {
-      hint.innerHTML = `<span style="color:#999">まだ登録されていません</span>`;
+      // sbが取れているのに 0 件 = 本当に未登録、sb未初期化なら別メッセージ
+      const sb = smdSb();
+      hint.innerHTML = sb
+        ? `<span style="color:#999">まだ登録されていません</span>`
+        : `<span style="color:#c0392b">⚠ 認証読込中...再読込してみてください</span>`;
     } else {
       const updated = info.latestUpdatedAt ? new Date(info.latestUpdatedAt).toLocaleDateString('ja-JP') : '-';
       const fetched = info.lastFetchedAt ? new Date(info.lastFetchedAt).toLocaleDateString('ja-JP') : '未取得';

@@ -302,11 +302,32 @@ async function handleSmdFetch() {
     btn.innerHTML = orig; btn.disabled = false;
   }
 }
-// 認証完了を待ってバッジ初期化 + 完成プール自動移動
+// 認証完了を確実に待ってバッジ初期化 + 完成プール自動移動
+async function waitForAuth(maxWaitMs) {
+  maxWaitMs = maxWaitMs || 10000;
+  const start = Date.now();
+  while (Date.now() - start < maxWaitMs) {
+    if (window.__ishiokaAuth && window.getSb) {
+      // Supabase セッションのセット完了を少し待つ
+      await new Promise(r => setTimeout(r, 300));
+      return true;
+    }
+    await new Promise(r => setTimeout(r, 200));
+  }
+  console.warn('[smd] auth wait timeout');
+  return false;
+}
 (async function smdInit() {
-  // authGuard 完了を雑に待つ
-  await new Promise(r => setTimeout(r, 1500));
-  if (window.smdRenderBadge) await window.smdRenderBadge('btnSmdFetch', 'smdHint', 'katachi');
+  const ok = await waitForAuth();
+  if (!ok) return;
+  console.log('[smd] auth ready, fetching badge info...');
+  if (window.smdRenderBadge) {
+    try {
+      await window.smdRenderBadge('btnSmdFetch', 'smdHint', 'katachi');
+    } catch (e) {
+      console.error('[smd] renderBadge err', e);
+    }
+  }
   if (window.fnpAutoMoveCompletedPool) {
     const r = await window.fnpAutoMoveCompletedPool();
     if (r.moved > 0) console.log(`[smd] auto-moved ${r.moved} projects to completed_pool`);
