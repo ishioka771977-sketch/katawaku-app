@@ -1,28 +1,25 @@
 // ============================================================
-// 型知 KATACHI — フィールドノート入力 (note-input.js)
-//   仕様書 v3.3 (2026-04-25) Phase 1 実装
+// 型知 KATACHI — フィールドノート入力 (note-input.js) v2.0
+//
+// v2.0 変更点:
+//   - プロジェクトslug の localStorage 永続化を廃止
+//   - project_master テーブル中心の運用に切替
+//   - ファイル名規約: <project_id>__katachi__v<N>.{json,md}
+//   - frontmatter に project_id 追加
+//   - 改訂版取り込み時に旧版を _backup/ へ退避
+//   - 取り込み完了後に INDEX.md を自動再生成
 //
 // 「📝 ノート貼り付け」ボタン:
-//   1. テキスト中の JSON ブロックを自動抽出
-//   2. JSON は型知に即時反映 + Supabase projects/ に保存
-//   3. 残りの自由記述は Supabase field_notes/ に保存
-//   4. localStorage にも従来どおり自動保存（オフライン用）
+//   1. 既存工事を選ぶ or 新規工事を登録
+//   2. テキスト中の JSON ブロックを自動抽出
+//   3. JSON は型知に即時反映 + Supabase projects/ に新形式で保存
+//   4. 残りの自由記述は Supabase field_notes/ に保存
 // ============================================================
 
 const NI_BUCKET = 'knowledge-base';
-const NI_PROJECT_SLUGS_KEY = 'katachi_project_slugs';  // {日本語名: 英数slug} のマップ
+const NI_APP = 'katachi';
 
-// 構造物タイプ → スラッグ（knowledge-base.js と同じ）
-const NI_STRUCT_SLUG = {
-  deck_slab: 'slab',
-  parapet: 'parapet',
-  parapet_curb_and_barrier: 'parapet',
-  retaining_wall: 'wall',
-  abutment: 'abutment',
-  pier: 'pier',
-  box_culvert: 'box',
-  foundation: 'foundation',
-};
+// 構造種別 → 日本語ラベル / 構造系統slug
 const NI_STRUCT_LABEL = {
   deck_slab: '床版',
   parapet: '地覆・壁高欄',
@@ -34,50 +31,35 @@ const NI_STRUCT_LABEL = {
   foundation: '基礎',
 };
 
-// ────────────────────────────────────────────
-// プロジェクト名 ↔ スラッグ管理
-// ────────────────────────────────────────────
-function niGetSlugMap() {
-  try { return JSON.parse(localStorage.getItem(NI_PROJECT_SLUGS_KEY) || '{}'); }
-  catch { return {}; }
-}
-function niSaveSlugMap(map) {
-  localStorage.setItem(NI_PROJECT_SLUGS_KEY, JSON.stringify(map));
-}
-function niEnsureProjectSlug(name) {
-  const trimmed = (name || '').trim();
-  if (!trimmed) return 'p_unknown';
-  const map = niGetSlugMap();
-  if (map[trimmed]) return map[trimmed];
-  // 新規発行
-  const slug = 'p_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
-  map[trimmed] = slug;
-  niSaveSlugMap(map);
-  return slug;
+// ── 旧ロジック（v2.0 以降は使用されない、後方互換のため関数だけ残す） ──
+//   localStorage `katachi_project_slugs` も触らない
+function niEnsureProjectSlugLegacy(name) {  // eslint-disable-line no-unused-vars
+  // v2.0 以降は使用されない
+  return null;
 }
 
-// ────────────────────────────────────────────
-// JSON 抽出ロジック
-// ────────────────────────────────────────────
+// ── State ─────────────────────────────────────────
+let _niCachedProjects = [];
+
+async function niLoadProjects() {
+  _niCachedProjects = await window.pmListProjects({ status: 'in_progress' });
+  return _niCachedProjects;
+}
+
+// ── JSON 抽出 ─────────────────────────────────────
 function niExtractJsonAndNote(text) {
-  // 戻り値: { json: object|null, jsonRaw: string|null, note: string }
   const result = { json: null, jsonRaw: null, note: text };
-
-  // パターンA: ```json ... ``` または ``` ... ```
   const fenceRe = /```(?:json)?\s*\n([\s\S]*?)\n```/gi;
   const fenceMatches = [...text.matchAll(fenceRe)];
-  for (const m of fenceMatches.reverse()) {  // 後ろから = 修正版優先
+  for (const m of fenceMatches.reverse()) {
     try {
       const parsed = JSON.parse(m[1].trim());
       result.json = parsed;
       result.jsonRaw = m[1].trim();
-      // テキストから JSON ブロックを除去
       result.note = (text.slice(0, m.index) + text.slice(m.index + m[0].length)).trim();
       return result;
     } catch {}
   }
-
-  // パターンB: 生 { ... } の bracket scan
   const startIdx = text.indexOf('{');
   if (startIdx >= 0) {
     let depth = 0, inStr = false, escape = false;
@@ -106,32 +88,27 @@ function niExtractJsonAndNote(text) {
   return result;
 }
 
-// 補足ノートの整形
 function niCleanNote(note) {
   return (note || '')
     .replace(/\r\n/g, '\n')
-    .replace(/\n{3,}/g, '\n\n')   // 連続空行を1行に
-    .replace(/^[ \t]+/gm, '')      // 行頭の余計な空白
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/^[ \t]+/gm, '')
     .trim();
 }
 
-// ────────────────────────────────────────────
-// Supabase Client
-// ────────────────────────────────────────────
+// ── Supabase Client ─────────────────────────────
 function niGetSb() { return window.getSb ? window.getSb() : null; }
 
-// ────────────────────────────────────────────
-// モーダル制御
-// ────────────────────────────────────────────
-function niOpenModal() {
-  // セレクト初期化
+// ── モーダル制御 ─────────────────────────────────
+async function niOpenModal() {
+  // プロジェクト一覧をリフレッシュ
+  await niLoadProjects();
   niRefreshProjectSelect();
   // 構造種別: 現在の appData があればそれを既定に
   const sel = document.getElementById('niStructSelect');
   if (sel && typeof appData !== 'undefined' && appData?.structure?.type) {
     sel.value = appData.structure.type;
   }
-  // テキストエリアクリア
   document.getElementById('niTextarea').value = '';
   document.getElementById('niStatus').textContent = '';
   document.getElementById('niPreview').style.display = 'none';
@@ -145,45 +122,54 @@ function niCloseModal() {
 function niRefreshProjectSelect() {
   const sel = document.getElementById('niProjectSelect');
   if (!sel) return;
-  const projects = (typeof getSavedProjects === 'function') ? getSavedProjects() : [];
-  const names = [...new Set(projects.map(p => p.projectName).filter(Boolean))];
-  sel.innerHTML = '<option value="">（新規入力）</option>'
-    + names.map(n => `<option value="${escAttr(n)}">${escHtml(n)}</option>`).join('');
+  const opts = ['<option value="">（プロジェクトを選択）</option>'];
+  for (const p of _niCachedProjects) {
+    opts.push(`<option value="${escAttr(p.project_id)}">${escHtml(p.project_name)} — ${escHtml(p.project_id)}</option>`);
+  }
+  sel.innerHTML = opts.join('');
 }
 
-function escHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escHtml(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function escAttr(s) { return escHtml(s); }
 
-// プロジェクト名取得（セレクト > 自由入力 の順）
-function niResolveProjectName() {
-  const sel = document.getElementById('niProjectSelect').value.trim();
-  const free = document.getElementById('niProjectFreeInput').value.trim();
-  return free || sel;
+// 「+ 新規工事を登録」リンクのハンドラ
+function niOpenRegisterFromNote() {
+  // 工事登録モーダルを開き、登録完了したら note モーダルに戻ってリストを更新
+  if (!window.prOpenModal) { alert('工事登録機能が未ロードです'); return; }
+  niCloseModal();
+  window.prOpenModal(async (newProject) => {
+    // 登録完了 → note モーダルを再度開いて、新規プロジェクトを選択状態にする
+    await niLoadProjects();
+    document.getElementById('niModal').style.display = 'flex';
+    niRefreshProjectSelect();
+    document.getElementById('niProjectSelect').value = newProject.project_id;
+  });
 }
 
-// ────────────────────────────────────────────
-// プレビュー表示
-// ────────────────────────────────────────────
-function niShowPreview() {
+// ── プレビュー ─────────────────────────────────
+async function niShowPreview() {
   const text = document.getElementById('niTextarea').value;
   if (!text.trim()) {
     niStatus('テキストが空です', 'err');
     return;
   }
-  const { json, jsonRaw, note } = niExtractJsonAndNote(text);
+  const projectId = document.getElementById('niProjectSelect').value;
+  if (!projectId) {
+    niStatus('プロジェクトを選択してください', 'err');
+    return;
+  }
+
+  const proj = _niCachedProjects.find(p => p.project_id === projectId);
+  const { json, note } = niExtractJsonAndNote(text);
   const cleanNote = niCleanNote(note);
 
-  const projName = niResolveProjectName() || '(未指定)';
   const structType = document.getElementById('niStructSelect').value;
   const structLabel = NI_STRUCT_LABEL[structType] || structType;
 
-  const projSlug = niEnsureProjectSlug(projName);
-  const structSlug = NI_STRUCT_SLUG[structType] || 'other';
-  const today = new Date().toISOString().slice(0, 10);
-  const projectFilename = `${today}_${projSlug}_${structSlug}.json`;
-  const noteFilename = `${today}_${projSlug}_${structSlug}_${Date.now().toString(36)}.md`;
+  const nextV = await window.pmDecideNextVersion(projectId, NI_APP);
+  const projectFile = window.pmFilenameFor({ projectId, app: NI_APP, version: nextV, ext: 'json' });
+  const noteFile = window.pmFilenameFor({ projectId, app: NI_APP, version: nextV, ext: 'md' });
 
-  // JSON の妥当性
   let jsonStatus = '';
   if (!json) {
     jsonStatus = '<span style="color:#e67e22">⚠ JSONブロックが見つかりませんでした（ノートのみ保存可能）</span>';
@@ -191,11 +177,9 @@ function niShowPreview() {
     const issues = [];
     if (!json.project?.name && !json.project_name) issues.push('project.name');
     if (!json.structure?.type && !json.structure_type) issues.push('structure.type');
-    if (issues.length === 0) {
-      jsonStatus = '<span style="color:#27ae60">✓ 妥当性チェック: OK</span>';
-    } else {
-      jsonStatus = `<span style="color:#e67e22">⚠ 不足フィールド: ${issues.join(', ')}（保存は可能）</span>`;
-    }
+    jsonStatus = issues.length === 0
+      ? '<span style="color:#27ae60">✓ 妥当性チェック: OK</span>'
+      : `<span style="color:#e67e22">⚠ 不足フィールド: ${issues.join(', ')}（保存は可能）</span>`;
   }
 
   const pv = document.getElementById('niPreview');
@@ -212,10 +196,11 @@ function niShowPreview() {
     }</pre>
 
     <div style="font-size:11px;color:#666;margin-top:8px;line-height:1.6">
-      <div>プロジェクト: <b>${escHtml(projName)}</b> (slug: <code>${projSlug}</code>)</div>
-      <div>構造: <b>${escHtml(structLabel)}</b> (slug: <code>${structSlug}</code>)</div>
-      <div>JSON保存先: <code>projects/${projectFilename}</code></div>
-      <div>ノート保存先: <code>field_notes/${noteFilename}</code></div>
+      <div>プロジェクト: <b>${escHtml(proj?.project_name || '')}</b> <code>${escHtml(projectId)}</code></div>
+      <div>構造: <b>${escHtml(structLabel)}</b></div>
+      <div>バージョン: <b>v${nextV}</b> ${nextV >= 2 ? '<span style="color:#e67e22">（旧版は _backup/ に退避されます）</span>' : ''}</div>
+      <div>JSON保存先: <code>projects/${projectFile}</code></div>
+      <div>ノート保存先: <code>field_notes/${noteFile}</code></div>
     </div>
   `;
   pv.style.display = 'block';
@@ -229,17 +214,17 @@ function niStatus(msg, type) {
   st.style.color = type === 'err' ? '#c0392b' : type === 'ok' ? '#27ae60' : '#666';
 }
 
-// ────────────────────────────────────────────
-// 「取り込む」処理本体
-// ────────────────────────────────────────────
+// ── 「取り込む」処理本体 ─────────────────────────
 async function niSubmit() {
   const text = document.getElementById('niTextarea').value;
   if (!text.trim()) { niStatus('テキストが空です', 'err'); return; }
 
-  const projName = niResolveProjectName();
-  const structType = document.getElementById('niStructSelect').value;
-  if (!projName) { niStatus('プロジェクト名を入力してください', 'err'); return; }
+  const projectId = document.getElementById('niProjectSelect').value;
+  if (!projectId) { niStatus('プロジェクトを選択してください', 'err'); return; }
 
+  const proj = _niCachedProjects.find(p => p.project_id === projectId);
+  const structType = document.getElementById('niStructSelect').value;
+  const structLabel = NI_STRUCT_LABEL[structType] || structType;
   const { json, note } = niExtractJsonAndNote(text);
   const cleanNote = niCleanNote(note);
 
@@ -248,29 +233,33 @@ async function niSubmit() {
     return;
   }
 
-  const projSlug = niEnsureProjectSlug(projName);
-  const structSlug = NI_STRUCT_SLUG[structType] || 'other';
-  const structLabel = NI_STRUCT_LABEL[structType] || structType;
-  const today = new Date().toISOString().slice(0, 10);
-
   niStatus('保存中...', 'info');
   const sb = niGetSb();
   if (!sb) { niStatus('Supabase 未接続', 'err'); return; }
 
+  const today = new Date().toISOString().slice(0, 10);
+  const nextV = await window.pmDecideNextVersion(projectId, NI_APP);
+
+  // v >= 2 なら既存最新版をバックアップ
+  if (nextV >= 2) {
+    niStatus('旧版を _backup/ に退避中...', 'info');
+    const r = await window.pmBackupExistingVersions(projectId, NI_APP);
+    console.log(`[ni] backup moved=${r.moved}`);
+  }
+
   const results = [];
   let savedJsonPath = null, savedNotePath = null;
 
-  // 1) JSON を Supabase + localStorage に保存
+  // 1) JSON 保存
   if (json) {
-    // 元データに project/structure メタを補完
     if (!json.project) json.project = {};
-    if (!json.project.name) json.project.name = projName;
+    if (!json.project.name) json.project.name = proj?.project_name || '';
     if (!json.structure) json.structure = {};
     if (!json.structure.type) json.structure.type = structType;
 
-    const jsonPath = `projects/${today}_${projSlug}_${structSlug}.json`;
-    const jsonStr = JSON.stringify(json, null, 2);
-    const blob = new Blob([jsonStr], { type: 'application/json; charset=utf-8' });
+    const jsonFile = window.pmFilenameFor({ projectId, app: NI_APP, version: nextV, ext: 'json' });
+    const jsonPath = `projects/${jsonFile}`;
+    const blob = new Blob([JSON.stringify(json, null, 2)], { type: 'application/json; charset=utf-8' });
     try {
       const { error } = await sb.storage.from(NI_BUCKET).upload(jsonPath, blob, {
         upsert: true,
@@ -280,7 +269,6 @@ async function niSubmit() {
       savedJsonPath = jsonPath;
       results.push(`✓ JSON保存: ${jsonPath}`);
 
-      // 型知の表示更新（既存 initApp を流用）
       if (typeof initApp === 'function') {
         try { initApp(json); results.push('✓ 型知の表示を更新'); }
         catch (e) { results.push('⚠ 表示更新失敗: ' + e.message); }
@@ -290,10 +278,10 @@ async function niSubmit() {
     }
   }
 
-  // 2) 補足ノートを Supabase に保存
+  // 2) 補足ノート保存
   if (cleanNote) {
-    const ts = Date.now().toString(36);
-    const notePath = `field_notes/${today}_${projSlug}_${structSlug}_${ts}.md`;
+    const noteFile = window.pmFilenameFor({ projectId, app: NI_APP, version: nextV, ext: 'md' });
+    const notePath = `field_notes/${noteFile}`;
     const author = window.__ishiokaAuth?.profile;
     const authorName = author?.display_name || author?.name || author?.employee_number || '不明';
     const authorId = author?.employee_number || 'anon';
@@ -302,15 +290,16 @@ async function niSubmit() {
 date: ${today}
 author: ${authorName}
 author_id: ${authorId}
-project_name: ${projName}
-project_slug: ${projSlug}
+project_id: ${projectId}
+project_name: ${proj?.project_name || ''}
 struct_type: ${structLabel}
-struct_slug: ${structSlug}
-app: katachi
+struct_slug: ${structType}
+app: ${NI_APP}
+version: ${nextV}
 source: note_input
 ---
 
-# ${projName} ${structLabel} — フィールドノート (${today})
+# ${proj?.project_name || ''} ${structLabel} — フィールドノート v${nextV} (${today})
 
 ## 補足ノート
 
@@ -332,18 +321,28 @@ ${savedJsonPath ? `\n---\n\n## 関連JSONファイル\n\n- \`${savedJsonPath}\`�
     }
   }
 
-  // 完了表示
+  // 3) INDEX 再生成
+  if (savedJsonPath || savedNotePath) {
+    niStatus('INDEX 更新中...', 'info');
+    try {
+      const r = await window.ibRebuildAllIndexes();
+      if (r?.ok) results.push('✓ INDEX 更新');
+    } catch (e) {
+      console.warn('[ni] index rebuild err', e);
+    }
+  }
+
   const ok = (savedJsonPath || savedNotePath);
   niStatus(results.join(' / '), ok ? 'ok' : 'err');
 
   if (ok) {
-    // トースト表示 + モーダルを閉じる
     setTimeout(() => {
       niCloseModal();
       niShowToast(
         '✅ 取り込み完了\n'
-        + (savedJsonPath ? '・型枠施工図を更新しました\n' : '')
-        + (savedNotePath ? '・フィールドノートを保存しました' : '')
+        + (savedJsonPath ? `・型枠施工図を更新しました (v${nextV})\n` : '')
+        + (savedNotePath ? '・フィールドノートを保存しました\n' : '')
+        + '・INDEX を更新しました'
       );
     }, 1500);
   }
@@ -363,3 +362,4 @@ window.niOpenModal = niOpenModal;
 window.niCloseModal = niCloseModal;
 window.niShowPreview = niShowPreview;
 window.niSubmit = niSubmit;
+window.niOpenRegisterFromNote = niOpenRegisterFromNote;

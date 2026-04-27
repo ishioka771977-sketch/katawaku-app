@@ -15,6 +15,8 @@ import sys
 import mimetypes
 from pathlib import Path
 
+sys.stdout.reconfigure(encoding='utf-8')
+
 try:
     from supabase import create_client
 except ImportError:

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>型知 admin — 工事マスタ管理 (v2.0 スタブ)</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/config.js"></script>
+<script src="/auth.js"></script>
+<script>(async () => { await authGuard(); })();</script>
+<script src="/project-master.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'BIZ UDPGothic','Meiryo',sans-serif;background:#f5f5f5;color:#333;font-size:14px;padding:20px}
+h1{font-size:18px;color:#1a5276;margin-bottom:6px}
+.subtitle{font-size:12px;color:#666;margin-bottom:18px}
+.stub-banner{background:#fff8e1;border-left:4px solid #f39c12;padding:10px 14px;margin-bottom:14px;font-size:12px}
+table{width:100%;border-collapse:collapse;background:#fff;font-size:12px;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+th,td{border:1px solid #e0e0e0;padding:8px;text-align:left;vertical-align:top}
+th{background:#f0f4f8;font-weight:bold;color:#1a5276}
+.status-pill{display:inline-block;padding:1px 8px;border-radius:8px;font-size:10px;font-weight:bold}
+.s-in_progress{background:#e8f0fe;color:#1a5276}
+.s-completed_pool{background:#fff8e1;color:#e67e22}
+.s-integrated{background:#dff5e8;color:#27ae60}
+input,select,textarea{font:inherit;padding:4px 6px;border:1px solid #ccc;border-radius:3px;width:100%}
+.btn{display:inline-block;padding:5px 10px;border:none;border-radius:3px;cursor:pointer;font-size:11px;font-weight:bold;margin-right:4px}
+.btn-primary{background:#1a5276;color:#fff}
+.btn-success{background:#27ae60;color:#fff}
+.btn-warning{background:#f39c12;color:#fff}
+.legacy-input{font-family:Consolas,monospace;font-size:11px;width:100%;height:60px}
+.empty{text-align:center;padding:40px;color:#999;font-size:13px}
+.toolbar{margin-bottom:12px;display:flex;gap:8px;align-items:center}
+</style>
+</head>
+<body>
+
+<h1>型知 admin — 工事マスタ管理</h1>
+<div class="subtitle">v2.0 最小スタブ画面 — project_master の閲覧と legacy_slugs の編集</div>
+
+<div class="stub-banner">
+  <b>このページは v2.0 の最小スタブ実装です。</b>
+  実データ0件のため、本格的なマッピング作業は発生しない想定。今後旧形式ファイルが発生した場合に備えた最低限の機能のみ提供しています。
+</div>
+
+<div class="toolbar">
+  <button class="btn btn-primary" onclick="loadAll()">🔄 再読込</button>
+  <button class="btn btn-success" onclick="rebuildIndexes()">🗂️ INDEX 再生成</button>
+  <span id="globalStatus" style="font-size:12px;color:#666;margin-left:10px"></span>
+</div>
+
+<table id="projTable">
+  <thead>
+    <tr>
+      <th style="width:200px">project_id</th>
+      <th style="width:180px">工事名</th>
+      <th style="width:100px">状態</th>
+      <th style="width:140px">工期</th>
+      <th>legacy_slugs（旧形式マッピング）</th>
+      <th style="width:100px">操作</th>
+    </tr>
+  </thead>
+  <tbody id="projTbody">
+    <tr><td colspan="6" class="empty">読込中...</td></tr>
+  </tbody>
+</table>
+
+<script src="/index-builder.js"></script>
+<script>
+const STATUS_LABEL = {
+  in_progress: '進行中',
+  completed_pool: '完成プール',
+  integrated: '統合済み',
+};
+
+function setGlobalStatus(msg, color) {
+  const el = document.getElementById('globalStatus');
+  el.textContent = msg;
+  el.style.color = color || '#666';
+}
+
+async function loadAll() {
+  setGlobalStatus('読込中...');
+  const projects = await window.pmListProjects();
+  const tbody = document.getElementById('projTbody');
+  if (!projects.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty">登録された工事はまだありません。型知トップ画面の「🏗️ 工事を登録」から登録してください。</td></tr>';
+    setGlobalStatus(`0件`);
+    return;
+  }
+  tbody.innerHTML = '';
+  for (const p of projects) {
+    const tr = document.createElement('tr');
+    const period = (p.start_date || '-') + ' 〜 ' + (p.planned_end_date || '-');
+    const slugs = (p.legacy_slugs || []).join('\n');
+    tr.innerHTML = `
+      <td><code>${escHtml(p.project_id)}</code></td>
+      <td>${escHtml(p.project_name || '')}</td>
+      <td>
+        <select id="status_${escAttr(p.project_id)}">
+          <option value="in_progress" ${p.status==='in_progress'?'selected':''}>進行中</option>
+          <option value="completed_pool" ${p.status==='completed_pool'?'selected':''}>完成プール</option>
+          <option value="integrated" ${p.status==='integrated'?'selected':''}>統合済み</option>
+        </select>
+      </td>
+      <td>${period}</td>
+      <td><textarea class="legacy-input" id="slugs_${escAttr(p.project_id)}" placeholder="1行1slug">${escHtml(slugs)}</textarea></td>
+      <td>
+        <button class="btn btn-warning" onclick="saveRow('${escAttr(p.project_id)}')">保存</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  }
+  setGlobalStatus(`${projects.length}件 読込完了`, '#27ae60');
+}
+
+async function saveRow(projectId) {
+  const sb = window.getSb();
+  if (!sb) { setGlobalStatus('Supabase 未接続', '#c0392b'); return; }
+
+  const status = document.getElementById('status_' + projectId).value;
+  const slugsRaw = document.getElementById('slugs_' + projectId).value;
+  const legacySlugs = slugsRaw.split('\n').map(s => s.trim()).filter(Boolean);
+
+  setGlobalStatus(`${projectId} 更新中...`);
+  try {
+    const { error } = await sb.from('project_master')
+      .update({ status, legacy_slugs: legacySlugs })
+      .eq('project_id', projectId);
+    if (error) throw error;
+    setGlobalStatus(`✓ ${projectId} 更新完了`, '#27ae60');
+  } catch (e) {
+    setGlobalStatus(`❌ 更新失敗: ${e.message || e}`, '#c0392b');
+  }
+}
+
+async function rebuildIndexes() {
+  setGlobalStatus('INDEX 再生成中...');
+  const r = await window.ibRebuildAllIndexes();
+  if (r?.ok) setGlobalStatus(`✓ INDEX 再生成完了 (${r.paths.join(', ')})`, '#27ae60');
+  else setGlobalStatus(`❌ ${r?.error || '失敗'}`, '#c0392b');
+}
+
+function escHtml(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escAttr(s) { return escHtml(s); }
+
+// 認証完了後にロード
+setTimeout(loadAll, 800);
+</script>
+
+</body>
+</html>
