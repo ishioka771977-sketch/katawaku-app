@@ -1,21 +1,12 @@
 // ============================================================
-// 型知 KATACHI 認証 Phase 2 (デバイストークン方式)
-// 有給ナビのAPIを叩いてセッションを取得
+// 型知 KATACHI 認証（社員番号→employees直接照合方式）
+// 有給ナビと同じ方式に統一
 // ============================================================
-
-const APP_NAME = 'katachi';
-// 有給ナビのAPIベースURL（開発: localhost:3000 / 本番: 切替）
-const AUTH_API_BASE = window.ISHIOKA_AUTH_API_BASE || 'http://localhost:3000';
 
 const SUPABASE_URL = 'https://koxovaejdkfkbcygriuu.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_0Dmo_sKP8OQLAGyYkVhCAw_F9Fucktq';
 
-const DEVICE_TOKEN_KEY = 'ishioka_device_token';
-const GUEST_TOKEN_KEY = 'ishioka_guest_device_token';
-
-// Supabase クライアント（グローバル supabase は window.supabase の名前と衝突するので別名）
 let sbClient = null;
-
 function getSb() {
   if (!sbClient && window.supabase?.createClient) {
     sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -23,133 +14,119 @@ function getSb() {
   return sbClient;
 }
 
-// -------------- Storage --------------
-function getStoredDeviceToken() { return localStorage.getItem(DEVICE_TOKEN_KEY); }
-function getStoredGuestToken() { return localStorage.getItem(GUEST_TOKEN_KEY); }
-function saveDeviceToken(t) { localStorage.setItem(DEVICE_TOKEN_KEY, t); }
-function saveGuestToken(t) { localStorage.setItem(GUEST_TOKEN_KEY, t); }
-function clearDeviceTokens() {
-  localStorage.removeItem(DEVICE_TOKEN_KEY);
-  localStorage.removeItem(GUEST_TOKEN_KEY);
+// ログイン中のユーザーを取得
+function getLoggedInUser() {
+  try {
+    const stored = localStorage.getItem('yukyu_employee');
+    if (stored) return JSON.parse(stored);
+  } catch {}
+  return null;
 }
 
-// -------------- API Calls --------------
-async function performDeviceLogin() {
-  const deviceToken = getStoredDeviceToken();
-  const guestToken = getStoredGuestToken();
-  if (!deviceToken && !guestToken) return null;
-
-  try {
-    const res = await fetch(`${AUTH_API_BASE}/api/auth/device-login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ deviceToken, guestToken, appName: APP_NAME }),
-    });
-    if (!res.ok) {
-      if (res.status === 401 || res.status === 403) clearDeviceTokens();
-      return null;
-    }
-    return await res.json();
-  } catch (e) {
-    console.error('[auth] device-login failed', e);
+// ログインチェック（ページ読み込み時に呼ぶ）
+function checkAuth() {
+  const user = getLoggedInUser();
+  if (!user) {
+    showLoginScreen();
     return null;
   }
+  hideLoginScreen();
+  return user;
 }
 
-async function performPairing(employeeNumber, code, deviceLabel) {
-  const res = await fetch(`${AUTH_API_BASE}/api/auth/pair`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ employeeNumber, code, deviceLabel }),
-  });
-  const data = await res.json();
-  if (!res.ok) return { error: data.error || 'pairing_failed' };
-  saveDeviceToken(data.deviceToken);
-  return data;
-}
-
-async function performQrPairing(qrCode, deviceLabel) {
-  const res = await fetch(`${AUTH_API_BASE}/api/auth/pair`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code: qrCode, deviceLabel }),
-  });
-  const data = await res.json();
-  if (!res.ok) return { error: data.error || 'pairing_failed' };
-  saveDeviceToken(data.deviceToken);
-  return data;
-}
-
-async function performGuestAccess(guestAccessToken, deviceLabel) {
-  const res = await fetch(`${AUTH_API_BASE}/api/auth/guest-access`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ guestAccessToken, deviceLabel }),
-  });
-  const data = await res.json();
-  if (!res.ok) return { error: data.error || 'guest_access_failed' };
-  saveGuestToken(data.deviceToken);
-  return data;
-}
-
-// -------------- Public API --------------
-
-// AuthGuard: 未認証なら /denied.html へリダイレクト。
-// pair.html や guest.html は認証不要なのでチェックスキップ
-async function authGuard() {
-  const path = window.location.pathname;
-  const name = path.split('/').pop() || '';
-  // 認証不要ページ
-  if (['pair.html', 'guest.html', 'denied.html', 'login.html'].includes(name)) {
-    return true;
-  }
+// ログイン処理
+async function handleLogin(empNum) {
+  const normalized = empNum.toUpperCase().trim();
+  if (!normalized) return { error: '社員番号を入力してください' };
 
   const sb = getSb();
-  if (!sb) {
-    console.error('[auth] Supabase SDK 未ロード');
-    window.location.replace('/denied.html');
-    return false;
-  }
+  if (!sb) return { error: 'データベースに接続できません' };
 
-  const result = await performDeviceLogin();
-  if (!result) {
-    window.location.replace('/denied.html');
-    return false;
-  }
+  const { data: emp, error: dbErr } = await sb
+    .from('employees')
+    .select('id, employee_number, name, role, is_active')
+    .eq('employee_number', normalized)
+    .single();
 
-  // Supabaseセッションをセット
-  const { error } = await sb.auth.setSession({
-    access_token: result.session.access_token,
-    refresh_token: result.session.refresh_token,
+  if (dbErr || !emp) return { error: 'この社員番号は登録されていません' };
+  if (!emp.is_active) return { error: 'このアカウントは無効です' };
+
+  const empData = JSON.stringify({
+    id: emp.id,
+    employee_number: emp.employee_number,
+    name: emp.name,
+    role: emp.role,
   });
-  if (error) {
-    console.error('[auth] setSession failed', error);
-    clearDeviceTokens();
-    window.location.replace('/denied.html');
-    return false;
-  }
+  localStorage.setItem('yukyu_employee', empData);
+  document.cookie = `yukyu_employee=${encodeURIComponent(empData)};path=/;max-age=${60*60*24*365};SameSite=Lax`;
 
-  window.__ishiokaAuth = {
-    type: result.type,
-    profile: result.profile,
-    userId: result.session.user.id,
-  };
-
-  return true;
+  return { success: true, employee: emp };
 }
 
-async function authLogout() {
-  clearDeviceTokens();
-  const sb = getSb();
-  if (sb) await sb.auth.signOut();
-  window.location.replace('/denied.html');
+// ログアウト
+function handleLogout() {
+  localStorage.removeItem('yukyu_employee');
+  document.cookie = 'yukyu_employee=;path=/;max-age=0';
+  showLoginScreen();
 }
 
-// グローバル公開
-window.authGuard = authGuard;
-window.authLogout = authLogout;
-window.authPair = performPairing;
-window.authQrPair = performQrPairing;
-window.authGuestAccess = performGuestAccess;
-window.clearDeviceTokens = clearDeviceTokens;
-window.getSb = getSb;  // knowledge-base.js から Storage 呼び出しに使用
+// ログイン画面の表示/非表示
+function showLoginScreen() {
+  let overlay = document.getElementById('auth-overlay');
+  if (overlay) { overlay.style.display = 'flex'; return; }
+
+  overlay = document.createElement('div');
+  overlay.id = 'auth-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:#f9fafb;display:flex;align-items:center;justify-content:center;z-index:9999;';
+  overlay.innerHTML = `
+    <div style="background:white;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.1);padding:32px;max-width:400px;width:90%;text-align:center;">
+      <h1 style="font-size:24px;font-weight:bold;color:#0070C0;margin-bottom:4px;">型知 KATACHI</h1>
+      <p style="font-size:13px;color:#999;margin-bottom:24px;">石岡組 型枠施工図</p>
+      <label style="display:block;text-align:left;font-size:14px;font-weight:500;margin-bottom:4px;">社員番号</label>
+      <input id="auth-empnum" type="text" maxlength="4" placeholder="例: T001"
+        style="width:100%;padding:12px;border:1px solid #d1d5db;border-radius:8px;text-align:center;font-size:20px;font-family:monospace;margin-bottom:8px;box-sizing:border-box;" />
+      <p style="font-size:11px;color:#aaa;margin-bottom:16px;">T=技術者 / W=作業員 / O=事務員 / X=管理者</p>
+      <div id="auth-error" style="display:none;background:#fef2f2;color:#dc2626;padding:8px;border-radius:8px;font-size:13px;margin-bottom:12px;"></div>
+      <button id="auth-submit" style="width:100%;padding:12px;background:#0070C0;color:white;border:none;border-radius:8px;font-size:16px;font-weight:500;cursor:pointer;">
+        ログイン
+      </button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const input = document.getElementById('auth-empnum');
+  const btn = document.getElementById('auth-submit');
+  const errDiv = document.getElementById('auth-error');
+
+  input.addEventListener('input', () => { input.value = input.value.toUpperCase(); });
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') btn.click(); });
+
+  btn.addEventListener('click', async () => {
+    errDiv.style.display = 'none';
+    btn.textContent = 'ログイン中…';
+    btn.disabled = true;
+
+    const result = await handleLogin(input.value);
+    if (result.error) {
+      errDiv.textContent = result.error;
+      errDiv.style.display = 'block';
+      btn.textContent = 'ログイン';
+      btn.disabled = false;
+    } else {
+      overlay.style.display = 'none';
+      location.reload();
+    }
+  });
+
+  input.focus();
+}
+
+function hideLoginScreen() {
+  const overlay = document.getElementById('auth-overlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+// ページ読み込み時に自動チェック
+document.addEventListener('DOMContentLoaded', () => {
+  checkAuth();
+});
