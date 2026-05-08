@@ -83,7 +83,7 @@ function showLoginScreen() {
       <h1 style="font-size:24px;font-weight:bold;color:#0070C0;margin-bottom:4px;">型知 KATACHI</h1>
       <p style="font-size:13px;color:#999;margin-bottom:24px;">石岡組 型枠施工図</p>
       <label style="display:block;text-align:left;font-size:14px;font-weight:500;margin-bottom:4px;">社員番号</label>
-      <input id="auth-empnum" type="text" maxlength="4" placeholder="例: T001"
+      <input id="auth-empnum" type="text" maxlength="4" placeholder="例: X000"
         style="width:100%;padding:12px;border:1px solid #d1d5db;border-radius:8px;text-align:center;font-size:20px;font-family:monospace;margin-bottom:8px;box-sizing:border-box;" />
       <p style="font-size:11px;color:#aaa;margin-bottom:16px;">T=技術者 / W=作業員 / O=事務員 / X=管理者</p>
       <div id="auth-error" style="display:none;background:#fef2f2;color:#dc2626;padding:8px;border-radius:8px;font-size:13px;margin-bottom:12px;"></div>
