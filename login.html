@@ -68,11 +68,11 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   <p class="subtitle">管理者（社員番号0001）のみ利用可能</p>
   <form id="loginForm">
     <label>社員番号（4桁）</label>
-    <input id="empNum" type="text" inputmode="numeric" maxlength="4" placeholder="0001" autofocus required>
+    <input id="empNum" type="text" inputmode="text" maxlength="4" placeholder="社員番号" autofocus required>
     <div id="error" class="error" style="display:none;"></div>
     <button id="submitBtn" type="submit">ログイン</button>
   </form>
-  <p class="hint">一般社員は <a href="/pair.html">機器ペアリング</a> から登録してください</p>
+  <p class="hint">T=技術者 / W=作業員 / O=事務員 / X=管理者</p>
 </div>
 <script>
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
