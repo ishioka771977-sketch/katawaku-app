@@ -85,7 +85,7 @@ function showLoginScreen() {
       <label style="display:block;text-align:left;font-size:14px;font-weight:500;margin-bottom:4px;">社員番号</label>
       <input id="auth-empnum" type="text" maxlength="4" placeholder="社員番号"
         style="width:100%;padding:12px;border:1px solid #d1d5db;border-radius:8px;text-align:center;font-size:20px;font-family:monospace;margin-bottom:8px;box-sizing:border-box;" />
-      <p style="font-size:11px;color:#aaa;margin-bottom:16px;">T=技術者 / W=作業員 / O=事務員 / X=管理者</p>
+      <p style="font-size:11px;color:#aaa;margin-bottom:16px;">T=技術者 / W=作業員 / J=事務員 / X=管理者</p>
       <div id="auth-error" style="display:none;background:#fef2f2;color:#dc2626;padding:8px;border-radius:8px;font-size:13px;margin-bottom:12px;"></div>
       <button id="auth-submit" style="width:100%;padding:12px;background:#0070C0;color:white;border:none;border-radius:8px;font-size:16px;font-weight:500;cursor:pointer;">
         ログイン
