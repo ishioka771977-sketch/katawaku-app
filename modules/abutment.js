@@ -669,6 +669,11 @@
       const sH = stem.height_mm || 5000;
       const liftH = stem.lift_height_mm || 2500;
       const liftCount = stem.lift_count || 2;
+      // 竪壁の対称テーパ（厚さ sTbot→sTop）: 前面S-A=背面へ / 背面S-B=前面へ傾く
+      const sHalf = (sTbot - sTop) / 2;            // 片側のテーパ量（全高sHあたり）
+      const sTheta = Math.atan2(sHalf, sH);        // 面の傾き角
+      const sSlantLift = liftH / Math.cos(sTheta); // 1リフトの斜面長（鉛直被覆=liftH）
+      const sZmid = (i) => sHalf * (i + 0.5) * liftH / sH; // リフトi中央でのテーパ前進量
       const pWid = parapet.width_mm || 1500;
       const pHt = parapet.height_mm || 800;
       const wLen = wingWall.length_mm || 3000;
@@ -736,12 +741,12 @@
       const sa2Face = ff('S-A2');
       const sb2Face = ff('S-B2');
 
-      // Lift 1 faces
-      const saMesh1 = createFaceMesh(saFace, fW, liftH);
-      const sbMesh1 = createFaceMesh(sbFace, fW, liftH);
+      // Lift 1 faces（テーパぶん斜面長 sSlantLift）
+      const saMesh1 = createFaceMesh(saFace, fW, sSlantLift);
+      const sbMesh1 = createFaceMesh(sbFace, fW, sSlantLift);
       // Lift 2 faces
-      const saMesh2 = createFaceMesh(sa2Face, fW, liftH);
-      const sbMesh2 = createFaceMesh(sb2Face, fW, liftH);
+      const saMesh2 = createFaceMesh(sa2Face, fW, sSlantLift);
+      const sbMesh2 = createFaceMesh(sb2Face, fW, sSlantLift);
 
       [saMesh1, sbMesh1, saMesh2, sbMesh2].forEach(m => scene.add(m));
 
@@ -756,8 +761,10 @@
 
       const waFace = ff('W-A');
       const wbFace = ff('W-B');
-      const waMesh = createFaceMesh(waFace, wLen, wHstart);
-      const wbMesh = createFaceMesh(wbFace, wLen, wHstart);
+      // ウイング壁は天端が橋台側(高wHstart)→自由端(低wHend)へ下がる＝高さ台形。
+      // W-A rot[0,PI,0]: 局所+x=橋台側(右,高), W-B rot[0,0,0]: 局所-x=橋台側(左,高)
+      const waMesh = createFaceMesh(waFace, wLen, wHstart, quadTopSlope(wLen, wHend, wHstart));
+      const wbMesh = createFaceMesh(wbFace, wLen, wHstart, quadTopSlope(wLen, wHstart, wHend));
       [waMesh, wbMesh].forEach(m => scene.add(m));
 
       // Wing wall concrete volume (translucent)
@@ -887,25 +894,25 @@
         // Stem front lift 1 (Z = stemZ0)
         {
           mesh: saMesh1,
-          folded: { pos: [fW / 2, fH + liftH / 2, stemZ0], rot: [0, Math.PI, 0] },
+          folded: { pos: [fW / 2, fH + liftH / 2, stemZ0 + sZmid(0)], rot: [sTheta, Math.PI, 0] },
           unfolded: { pos: [fW / 2, 0, -fH - liftH / 2 - 400], rot: [-Math.PI / 2, 0, 0] }
         },
         // Stem back lift 1
         {
           mesh: sbMesh1,
-          folded: { pos: [fW / 2, fH + liftH / 2, stemZ0 + sTbot], rot: [0, 0, 0] },
+          folded: { pos: [fW / 2, fH + liftH / 2, stemZ0 + sTbot - sZmid(0)], rot: [-sTheta, 0, 0] },
           unfolded: { pos: [fW / 2, 0, fD + fH + liftH / 2 + 400], rot: [-Math.PI / 2, 0, 0] }
         },
         // Stem front lift 2
         {
           mesh: saMesh2,
-          folded: { pos: [fW / 2, fH + liftH + liftH / 2, stemZ0], rot: [0, Math.PI, 0] },
+          folded: { pos: [fW / 2, fH + liftH + liftH / 2, stemZ0 + sZmid(1)], rot: [sTheta, Math.PI, 0] },
           unfolded: { pos: [fW / 2, 0, -fH - liftH - liftH / 2 - 600], rot: [-Math.PI / 2, 0, 0] }
         },
         // Stem back lift 2
         {
           mesh: sbMesh2,
-          folded: { pos: [fW / 2, fH + liftH + liftH / 2, stemZ0 + sTbot], rot: [0, 0, 0] },
+          folded: { pos: [fW / 2, fH + liftH + liftH / 2, stemZ0 + sTbot - sZmid(1)], rot: [-sTheta, 0, 0] },
           unfolded: { pos: [fW / 2, 0, fD + fH + liftH + liftH / 2 + 600], rot: [-Math.PI / 2, 0, 0] }
         },
         // Parapet front
