@@ -149,7 +149,21 @@
       const secX = (svgW - secW) / 2;
 
       svg += `<text x="${svgW/2}" y="${secY - 12}" text-anchor="middle" font-size="13" font-weight="bold" fill="#1a5276">断面図</text>`;
-      svg += `<rect x="${secX}" y="${secY}" width="${secW}" height="${secH*0.3}" fill="#ccc" stroke="#333" stroke-width="1.5"/>`;
+      // 床版コンクリート断面（横断勾配=むくり camber_mm を反映）
+      const deckH = secH * 0.3;
+      const camber = d.camber_mm || 0;
+      if (camber > 0) {
+        // 天端が中央で camber_mm 上がるむくり。実寸では見えないため形状は誇張、値は注記で明示。
+        const crownPx = 12; // 視覚的誇張量
+        svg += `<path d="M ${secX},${secY + deckH} L ${secX},${secY} `
+             + `Q ${secX + secW/2},${secY - 2*crownPx} ${secX + secW},${secY} `
+             + `L ${secX + secW},${secY + deckH} Z" fill="#ccc" stroke="#333" stroke-width="1.5"/>`;
+        // 中央むくり量の寸法線＋注記
+        svg += `<line x1="${secX + secW/2}" y1="${secY - crownPx}" x2="${secX + secW/2}" y2="${secY + 2}" stroke="#e67e22" stroke-width="1" stroke-dasharray="2,2"/>`;
+        svg += `<text x="${secX + secW/2}" y="${secY - crownPx - 4}" text-anchor="middle" font-size="9" fill="#e67e22">横断勾配 むくり ${camber}mm（形状は誇張表示）</text>`;
+      } else {
+        svg += `<rect x="${secX}" y="${secY}" width="${secW}" height="${deckH}" fill="#ccc" stroke="#333" stroke-width="1.5"/>`;
+      }
       svg += `<text x="${secX + secW/2}" y="${secY + secH*0.15 + 4}" text-anchor="middle" font-size="10" fill="#333">床版 t=${d.thickness_mm}mm</text>`;
       svg += `<rect x="${secX}" y="${secY + secH*0.3}" width="${secW}" height="${secH*0.08}" fill="#8B4513" stroke="#333" stroke-width="1"/>`;
       svg += `<text x="${secX + secW + 4}" y="${secY + secH*0.34 + 3}" font-size="9" fill="#8B4513">底鋼板 t=18mm</text>`;
