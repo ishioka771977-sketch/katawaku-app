@@ -827,6 +827,10 @@
       const wallAvgT = (tBot + tTop) / 2;
       const wallZ0 = toeMm;
       const wallZcenter = wallZ0 + tBot / 2;
+      // 前面勾配（底tBot→天端tTop）: A面を上端が背面側へ aDZ 傾ける
+      const aDZ = tBot - tTop;
+      const aSlantH = Math.sqrt(wallH * wallH + aDZ * aDZ);
+      const aTheta = Math.atan2(aDZ, wallH);
       const wallGeo = new THREE.BoxGeometry(length, wallH, wallAvgT);
       const wallMat = new THREE.MeshLambertMaterial({ color: 0xd5f5e3, transparent: true, opacity: 0.2 });
       const wallMesh = new THREE.Mesh(wallGeo, wallMat);
@@ -843,10 +847,12 @@
 
       const eMesh = createFaceMesh(eFace, length, baseT);
       const fMesh = createFaceMesh(fFace, length, baseT);
-      const aMesh = createFaceMesh(aFace, length, wallH);
-      const bMesh = createFaceMesh(bFace, length, wallH);
-      const cMesh = createFaceMesh(cFace, tBot, wallH);
-      const dMesh = createFaceMesh(dFace, tBot, wallH);
+      const aMesh = createFaceMesh(aFace, length, aSlantH); // 前面=勾配ぶん長い斜面
+      const bMesh = createFaceMesh(bFace, length, wallH);   // 背面=垂直
+      // 妻面(C/D)は前面勾配ぶん台形化（下底tBot→上底tTop）。
+      // 背面=垂直、前面=勾配。回転の都合で C は+x側背面(right)、D は-x側背面(left)。
+      const cMesh = createFaceMesh(cFace, tBot, wallH, quadTaper(tBot, tTop, wallH, 'right'));
+      const dMesh = createFaceMesh(dFace, tBot, wallH, quadTaper(tBot, tTop, wallH, 'left'));
 
       [eMesh, fMesh, aMesh, bMesh, cMesh, dMesh].forEach(m => scene.add(m));
 
@@ -920,7 +926,7 @@
         // Wall front (A face, front/toe side)
         {
           mesh: aMesh,
-          folded: { pos: [length / 2, baseT + wallH / 2, wallZ0], rot: [0, Math.PI, 0] },
+          folded: { pos: [length / 2, baseT + wallH / 2, wallZ0 + aDZ / 2], rot: [aTheta, Math.PI, 0] },
           unfolded: { pos: [length / 2, 0, -baseT - wallH / 2 - 400], rot: [-Math.PI / 2, 0, 0] }
         },
         // Wall back (B face, back/heel side)

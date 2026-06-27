@@ -354,11 +354,51 @@
   };
 
   // ============================================================
-  // Helper: Create face mesh
+  // Helper: 四隅自由（台形）ジオメトリ
+  //   corners: 面ローカル平面上の4点 [LB, RB, RT, LT]（左下→右下→右上→左上）
+  //   省略時の長方形と座標系を一致させるため、原点中心・z=0。
+  //   UV は各隅を展開長方形(0..1)へ固定マップ＝パネル割付/セパは展開長基準のまま、
+  //   空間配置だけ台形になる（型枠＝平板を展開長で割り付け→空間で傾けるのと一致）。
   // ============================================================
-  window.createFaceMesh = function(faceData, w, h) {
+  window.buildQuadGeometry = function(corners) {
+    const c = corners;
+    const g = new THREE.BufferGeometry();
+    const pos = new Float32Array([
+      c[0][0], c[0][1], 0,  c[1][0], c[1][1], 0,  c[2][0], c[2][1], 0, // LB,RB,RT
+      c[0][0], c[0][1], 0,  c[2][0], c[2][1], 0,  c[3][0], c[3][1], 0, // LB,RT,LT
+    ]);
+    const uv = new Float32Array([0,0, 1,0, 1,1,  0,0, 1,1, 0,1]);
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+    g.computeVertexNormals();
+    return g;
+  };
+
+  // テーパ面（直角台形）の四隅を返す。
+  //   wBot: 下底幅(=展開長), wTop: 上底幅, h: 高さ
+  //   lean: どちら側を垂直に保つか 'right'(=+x側垂直) / 'left' / 'center'(対称)
+  window.quadTaper = function(wBot, wTop, h, lean) {
+    const hb = -h/2, ht = h/2;
+    if (lean === 'left')   return [[-wBot/2,hb],[wBot/2,hb],[-wBot/2+wTop,ht],[-wBot/2,ht]];
+    if (lean === 'center') return [[-wBot/2,hb],[wBot/2,hb],[wTop/2,ht],[-wTop/2,ht]];
+    /* right(default) */   return [[-wBot/2,hb],[wBot/2,hb],[wBot/2,ht],[wBot/2-wTop,ht]];
+  };
+
+  // 縦断勾配で天端が左右で高さ違いの台形（下辺は水平、上辺が傾く）。
+  //   w: 幅, hL: 左端高さ, hR: 右端高さ
+  window.quadTopSlope = function(w, hL, hR) {
+    const hmax = Math.max(hL, hR);
+    return [[-w/2, -hmax/2],[w/2, -hmax/2],[w/2, -hmax/2+hR],[-w/2, -hmax/2+hL]];
+  };
+
+  // ============================================================
+  // Helper: Create face mesh
+  //   corners を渡すと任意四角形（台形）、省略時は従来の長方形 PlaneGeometry。
+  //   → 後方互換: 既存呼び出し createFaceMesh(face, w, h) は完全に従来通り。
+  // ============================================================
+  window.createFaceMesh = function(faceData, w, h, corners) {
     const tex = createFaceTexture(faceData, w, h);
-    const geo = new THREE.PlaneGeometry(w, h);
+    const geo = corners ? buildQuadGeometry(corners) : new THREE.PlaneGeometry(w, h);
     const mat = new THREE.MeshLambertMaterial({
       map: tex,
       side: THREE.DoubleSide,
