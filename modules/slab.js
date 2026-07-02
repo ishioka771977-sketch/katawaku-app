@@ -495,19 +495,26 @@
 
       set3DCameraTarget(W / 2, deckY0, L / 2, Math.max(W, L) * 0.85);
 
+      // 縦断勾配（橋軸方向, %）: 床版・主桁・型枠一式を Group ごと傾ける。
+      // 正の値で A2側(Z=L) が上がる。A1側(Z=0) 支点。
+      const lSlope = (dim.longitudinal_slope_percent || 0) / 100;
+      const deckGrp = new THREE.Group();
+      if (lSlope) deckGrp.rotation.x = -Math.atan(lSlope);
+      scene.add(deckGrp);
+
       // ---- 床版コンクリート（半透明） ----
       const deckGeo = new THREE.BoxGeometry(W, T, L);
       const deckMat = new THREE.MeshLambertMaterial({ color: 0xd6eaf8, transparent: true, opacity: 0.25 });
       const deckMesh = new THREE.Mesh(deckGeo, deckMat);
       deckMesh.position.set(W / 2, deckY0 + T / 2, L / 2);
-      scene.add(deckMesh);
+      deckGrp.add(deckMesh);
 
       // ---- 底鋼板（茶: 底型枠の役割＝コンパネ不要） ----
       const plateGeo = new THREE.BoxGeometry(W, steelT, L);
       const plateMat = new THREE.MeshLambertMaterial({ color: 0x8B4513, transparent: true, opacity: 0.55 });
       const plateMesh = new THREE.Mesh(plateGeo, plateMat);
       plateMesh.position.set(W / 2, girderH + steelT / 2, L / 2);
-      scene.add(plateMesh);
+      deckGrp.add(plateMesh);
 
       // ---- 主桁（I形鋼 簡易: ウェブ＋上下フランジ）＝支保工の役割 ----
       const gc = g.count || 16;
@@ -521,11 +528,11 @@
         const gx = gOff + i * gs;
         const web = new THREE.Mesh(new THREE.BoxGeometry(24, girderH - 40, L), steelMat);
         web.position.set(gx, girderH / 2, L / 2);
-        scene.add(web);
+        deckGrp.add(web);
         for (const fy of [10, girderH - 10]) {
           const fl = new THREE.Mesh(new THREE.BoxGeometry(300, 20, L), steelMat);
           fl.position.set(gx, fy, L / 2);
-          scene.add(fl);
+          deckGrp.add(fl);
         }
         // ハンチ型枠（上フランジ両脇の角度カット合板, 左右2枚/本）
         for (const sgn of [-1, 1]) {
@@ -534,7 +541,7 @@
           hMesh.rotation.order = 'ZYX';
           hMesh.rotation.set(Math.PI / 2, 0, sgn * hAng);
           hMesh.position.set(gx + sgn * (150 + hW / 2), deckY0 - hD / 2, L / 2);
-          scene.add(hMesh);
+          deckGrp.add(hMesh);
         }
       }
 
@@ -543,7 +550,7 @@
       const a2Mesh = createFaceMesh(ff("A'"), W, sideH); // Z=L 側（A2・妻）
       const bMesh  = createFaceMesh(ff('B'),  L, sideH); // X=0 側（上流）
       const b2Mesh = createFaceMesh(ff("B'"), L, sideH); // X=W 側（下流）
-      [aMesh, a2Mesh, bMesh, b2Mesh].forEach(m => scene.add(m));
+      [aMesh, a2Mesh, bMesh, b2Mesh].forEach(m => deckGrp.add(m));
 
       const fy = deckY0 + sideH / 2; // 側型枠は床版下端から上へ
       const faces3D = [
@@ -579,7 +586,7 @@
             const y = topY + camber * exag * (1 - t01 * t01); // 中央で最大
             pts.push(new THREE.Vector3(x, y, z));
           }
-          scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lineMat));
+          deckGrp.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lineMat));
         }
       }
 
@@ -590,7 +597,7 @@
           new THREE.Vector3(0, y, 0), new THREE.Vector3(W, y, 0),
           new THREE.Vector3(W, y, L), new THREE.Vector3(0, y, L), new THREE.Vector3(0, y, 0),
         ];
-        scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), edgeMat));
+        deckGrp.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), edgeMat));
       }
     },
 
