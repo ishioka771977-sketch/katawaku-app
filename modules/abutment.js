@@ -674,7 +674,6 @@
       const sH = stem.height_mm || 5000;
       const liftH = stem.lift_height_mm || 2500;
       const liftCount = stem.lift_count || 2;
-      // 竪壁の対称テーパ（厚さ sTbot→sTop）: 前面S-A=背面へ / 背面S-B=前面へ傾く
       // 竪壁テーパの面配分。taper_face: 'back'(背面のみ,kb既定)/'front'/'both'(対称)
       const sTaperFace = stem.taper_face || 'back';
       const sTotalTaper = stem.taper ? (sTbot - sTop) : 0;

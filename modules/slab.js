@@ -467,6 +467,134 @@
     },
 
     // ============================================================
+    // 3D View — 床版（X=橋幅, Y=高さ, Z=橋軸）
+    //   底型枠=底鋼板・支保工=主桁のため、型枠は側型枠4面＋主桁ハンチのみ。
+    //   むくり(camber_mm)は実寸では不可視のため誇張曲線ラインで表示。
+    // ============================================================
+    build3D(data, scene) {
+      const s = data.structure;
+      const dim = s.dimensions || {};
+      const g = s.girders || {};
+      const W = dim.width_mm || 20500;    // X: 橋幅
+      const L = dim.length_mm || 33000;   // Z: 橋軸（桁長）
+      const T = dim.thickness_mm || 178;  // 版厚
+      const camber = dim.camber_mm || 0;
+      const steelT = 18;                  // 底鋼板
+      const girderH = 900;                // 主桁の簡易表現高さ
+      const deckY0 = girderH + steelT;    // 床版下端
+      const hD = dim.haunch_depth_mm || 50;
+      const hW = dim.haunch_width_mm || 200;
+
+      const ff = id => {
+        for (const ph of (data.phases || [])) {
+          for (const f of (ph.faces || [])) if (f.id === id) return f;
+        }
+        return { id, name: id, panels: [], separators: null };
+      };
+      const sideH = (ff('A').panels && ff('A').panels[0] && ff('A').panels[0].height_mm) || (T + 52);
+
+      set3DCameraTarget(W / 2, deckY0, L / 2, Math.max(W, L) * 0.85);
+
+      // ---- 床版コンクリート（半透明） ----
+      const deckGeo = new THREE.BoxGeometry(W, T, L);
+      const deckMat = new THREE.MeshLambertMaterial({ color: 0xd6eaf8, transparent: true, opacity: 0.25 });
+      const deckMesh = new THREE.Mesh(deckGeo, deckMat);
+      deckMesh.position.set(W / 2, deckY0 + T / 2, L / 2);
+      scene.add(deckMesh);
+
+      // ---- 底鋼板（茶: 底型枠の役割＝コンパネ不要） ----
+      const plateGeo = new THREE.BoxGeometry(W, steelT, L);
+      const plateMat = new THREE.MeshLambertMaterial({ color: 0x8B4513, transparent: true, opacity: 0.55 });
+      const plateMesh = new THREE.Mesh(plateGeo, plateMat);
+      plateMesh.position.set(W / 2, girderH + steelT / 2, L / 2);
+      scene.add(plateMesh);
+
+      // ---- 主桁（I形鋼 簡易: ウェブ＋上下フランジ）＝支保工の役割 ----
+      const gc = g.count || 16;
+      const gs = g.spacing_mm || 1340;
+      const gOff = (W - (gc - 1) * gs) / 2;
+      const steelMat = new THREE.MeshLambertMaterial({ color: 0x555f66, transparent: true, opacity: 0.5 });
+      const haunchMat = new THREE.MeshLambertMaterial({ color: 0xe67e22, transparent: true, opacity: 0.75, side: THREE.DoubleSide });
+      const hDev = Math.sqrt(hD * hD + hW * hW);
+      const hAng = Math.atan2(hD, hW);
+      for (let i = 0; i < gc; i++) {
+        const gx = gOff + i * gs;
+        const web = new THREE.Mesh(new THREE.BoxGeometry(24, girderH - 40, L), steelMat);
+        web.position.set(gx, girderH / 2, L / 2);
+        scene.add(web);
+        for (const fy of [10, girderH - 10]) {
+          const fl = new THREE.Mesh(new THREE.BoxGeometry(300, 20, L), steelMat);
+          fl.position.set(gx, fy, L / 2);
+          scene.add(fl);
+        }
+        // ハンチ型枠（上フランジ両脇の角度カット合板, 左右2枚/本）
+        for (const sgn of [-1, 1]) {
+          const hMesh = new THREE.Mesh(new THREE.PlaneGeometry(hDev, L), haunchMat);
+          // ZYX: 先にX回転で帯を橋軸(Z)方向に寝かせ、後からZ軸回転で hAng 傾ける
+          hMesh.rotation.order = 'ZYX';
+          hMesh.rotation.set(Math.PI / 2, 0, sgn * hAng);
+          hMesh.position.set(gx + sgn * (150 + hW / 2), deckY0 - hD / 2, L / 2);
+          scene.add(hMesh);
+        }
+      }
+
+      // ---- 側型枠4面（テクスチャ＋折り畳み対応） ----
+      const aMesh  = createFaceMesh(ff('A'),  W, sideH); // Z=0 側（A1・妻）
+      const a2Mesh = createFaceMesh(ff("A'"), W, sideH); // Z=L 側（A2・妻）
+      const bMesh  = createFaceMesh(ff('B'),  L, sideH); // X=0 側（上流）
+      const b2Mesh = createFaceMesh(ff("B'"), L, sideH); // X=W 側（下流）
+      [aMesh, a2Mesh, bMesh, b2Mesh].forEach(m => scene.add(m));
+
+      const fy = deckY0 + sideH / 2; // 側型枠は床版下端から上へ
+      const faces3D = [
+        { mesh: aMesh,
+          folded:   { pos: [W / 2, fy, 0], rot: [0, Math.PI, 0] },
+          unfolded: { pos: [W / 2, 0, -sideH / 2 - 400], rot: [-Math.PI / 2, 0, 0] } },
+        { mesh: a2Mesh,
+          folded:   { pos: [W / 2, fy, L], rot: [0, 0, 0] },
+          unfolded: { pos: [W / 2, 0, L + sideH / 2 + 400], rot: [-Math.PI / 2, 0, 0] } },
+        { mesh: bMesh,
+          folded:   { pos: [0, fy, L / 2], rot: [0, -Math.PI / 2, 0] },
+          unfolded: { pos: [-sideH / 2 - 400, 0, L / 2], rot: [-Math.PI / 2, 0, 0] } },
+        { mesh: b2Mesh,
+          folded:   { pos: [W, fy, L / 2], rot: [0, Math.PI / 2, 0] },
+          unfolded: { pos: [W + sideH / 2 + 400, 0, L / 2], rot: [-Math.PI / 2, 0, 0] } },
+      ];
+      faces3D.forEach(f => {
+        f.mesh.position.set(...f.folded.pos);
+        f.mesh.rotation.set(...f.folded.rot);
+      });
+      register3DFaces(faces3D);
+
+      // ---- むくり誇張ライン（橙・Z=0/中央/L の3本） ----
+      if (camber > 0) {
+        const exag = 40; // 実寸では不可視のため誇張倍率
+        const lineMat = new THREE.LineBasicMaterial({ color: 0xe67e22 });
+        const topY = deckY0 + T;
+        for (const z of [0, L / 2, L]) {
+          const pts = [];
+          for (let k = 0; k <= 24; k++) {
+            const x = (W * k) / 24;
+            const t01 = (2 * x) / W - 1;                    // -1..1
+            const y = topY + camber * exag * (1 - t01 * t01); // 中央で最大
+            pts.push(new THREE.Vector3(x, y, z));
+          }
+          scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lineMat));
+        }
+      }
+
+      // ---- 床版エッジライン ----
+      const edgeMat = new THREE.LineBasicMaterial({ color: 0x1a5276 });
+      for (const y of [deckY0, deckY0 + T]) {
+        const pts = [
+          new THREE.Vector3(0, y, 0), new THREE.Vector3(W, y, 0),
+          new THREE.Vector3(W, y, L), new THREE.Vector3(0, y, L), new THREE.Vector3(0, y, 0),
+        ];
+        scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), edgeMat));
+      }
+    },
+
+    // ============================================================
     // PDF Export
     // ============================================================
     exportPDF(data) {
