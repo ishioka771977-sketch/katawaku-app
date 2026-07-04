@@ -617,18 +617,48 @@
       if (lSlope) deckGrp.rotation.x = -Math.atan(lSlope);
       scene.add(deckGrp);
 
-      // ---- 床版コンクリート（半透明） ----
-      const deckGeo = new THREE.BoxGeometry(W, T, L);
+      // 斜角（S2）: skew_angle_deg=支承線∠橋軸(90=直橋)。'right'=B面(X=0)側が+Zへずれる（2D平面図と同定義）
+      const skewDeg = dim.skew_angle_deg || 90;
+      const isSkew = Math.abs(skewDeg - 90) > 0.01;
+      const dzTotal = isSkew ? (W / Math.tan(skewDeg * Math.PI / 180)) * (dim.skew_direction === 'left' ? -1 : 1) : 0;
+      const zoff = (x) => isSkew ? dzTotal * (1 - x / W) : 0; // X位置→橋軸方向の前進量（X=0でdz, X=Wで0）
+      const aFaceLen = isSkew ? Math.hypot(W, dzTotal) : W;   // 妻面実長 = W/sinθ
+      // 平行四辺形プリズム（頂点にワールド座標を直書き。X=0側が+Zへdzずれる）
+      const skewPrism = (w, h, l, y0) => {
+        const P = (x, y, z) => [x, y0 + y, z + zoff(x)];
+        const v = [];
+        const quad = (a, b, c, d2) => v.push(...a, ...b, ...c, ...a, ...c, ...d2);
+        const A = P(0,0,0), B = P(w,0,0), C = P(w,0,l), D = P(0,0,l);
+        const E = P(0,h,0), F = P(w,h,0), G = P(w,h,l), H = P(0,h,l);
+        quad(D, C, B, A); quad(E, F, G, H);           // 下面・上面
+        quad(A, B, F, E); quad(C, D, H, G);           // 妻側2面
+        quad(D, A, E, H); quad(B, C, G, F);           // 側面2面
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(v), 3));
+        g.computeVertexNormals();
+        return g;
+      };
+
+      // ---- 床版コンクリート（半透明。斜角時は平行四辺形プリズム） ----
       const deckMat = new THREE.MeshLambertMaterial({ color: 0xd6eaf8, transparent: true, opacity: 0.25 });
-      const deckMesh = new THREE.Mesh(deckGeo, deckMat);
-      deckMesh.position.set(W / 2, deckY0 + T / 2, L / 2);
+      let deckMesh;
+      if (isSkew) {
+        deckMesh = new THREE.Mesh(skewPrism(W, T, L, deckY0), deckMat);
+      } else {
+        deckMesh = new THREE.Mesh(new THREE.BoxGeometry(W, T, L), deckMat);
+        deckMesh.position.set(W / 2, deckY0 + T / 2, L / 2);
+      }
       deckGrp.add(deckMesh);
 
       // ---- 底鋼板（茶: 底型枠の役割＝コンパネ不要） ----
-      const plateGeo = new THREE.BoxGeometry(W, steelT, L);
       const plateMat = new THREE.MeshLambertMaterial({ color: 0x8B4513, transparent: true, opacity: 0.55 });
-      const plateMesh = new THREE.Mesh(plateGeo, plateMat);
-      plateMesh.position.set(W / 2, girderH + steelT / 2, L / 2);
+      let plateMesh;
+      if (isSkew) {
+        plateMesh = new THREE.Mesh(skewPrism(W, steelT, L, girderH), plateMat);
+      } else {
+        plateMesh = new THREE.Mesh(new THREE.BoxGeometry(W, steelT, L), plateMat);
+        plateMesh.position.set(W / 2, girderH + steelT / 2, L / 2);
+      }
       deckGrp.add(plateMesh);
 
       // ---- 主桁（I形鋼 簡易: ウェブ＋上下フランジ）＝支保工の役割 ----
@@ -641,12 +671,13 @@
       const hAng = Math.atan2(hD, hW);
       for (let i = 0; i < gc; i++) {
         const gx = gOff + i * gs;
+        const gz = L / 2 + zoff(gx); // 斜角時: 桁は橋軸平行のまま支承線位置がX位置に応じてずれる
         const web = new THREE.Mesh(new THREE.BoxGeometry(24, girderH - 40, L), steelMat);
-        web.position.set(gx, girderH / 2, L / 2);
+        web.position.set(gx, girderH / 2, gz);
         deckGrp.add(web);
         for (const fy of [10, girderH - 10]) {
           const fl = new THREE.Mesh(new THREE.BoxGeometry(300, 20, L), steelMat);
-          fl.position.set(gx, fy, L / 2);
+          fl.position.set(gx, fy, gz);
           deckGrp.add(fl);
         }
         // ハンチ型枠（上フランジ両脇の角度カット合板, 左右2枚/本）
@@ -655,14 +686,16 @@
           // ZYX: 先にX回転で帯を橋軸(Z)方向に寝かせ、後からZ軸回転で hAng 傾ける
           hMesh.rotation.order = 'ZYX';
           hMesh.rotation.set(Math.PI / 2, 0, sgn * hAng);
-          hMesh.position.set(gx + sgn * (150 + hW / 2), deckY0 - hD / 2, L / 2);
+          hMesh.position.set(gx + sgn * (150 + hW / 2), deckY0 - hD / 2, gz);
           deckGrp.add(hMesh);
         }
       }
 
       // ---- 側型枠4面（テクスチャ＋折り畳み対応） ----
-      const aMesh  = createFaceMesh(ff('A'),  W, sideH); // Z=0 側（A1・妻）
-      const a2Mesh = createFaceMesh(ff("A'"), W, sideH); // Z=L 側（A2・妻）
+      // 斜角時: A/A'妻型枠は実長 W/sinθ で支承線方向(Y回転 skewRot)に配置。B/B'は支承線ぶんZシフト。
+      const skewRot = isSkew ? Math.atan2(dzTotal, W) : 0;
+      const aMesh  = createFaceMesh(ff('A'),  aFaceLen, sideH); // Z=0 側（A1・妻）
+      const a2Mesh = createFaceMesh(ff("A'"), aFaceLen, sideH); // Z=L 側（A2・妻）
       const bMesh  = createFaceMesh(ff('B'),  L, sideH); // X=0 側（上流）
       const b2Mesh = createFaceMesh(ff("B'"), L, sideH); // X=W 側（下流）
       [aMesh, a2Mesh, bMesh, b2Mesh].forEach(m => deckGrp.add(m));
@@ -670,17 +703,17 @@
       const fy = deckY0 + sideH / 2; // 側型枠は床版下端から上へ
       const faces3D = [
         { mesh: aMesh,
-          folded:   { pos: [W / 2, fy, 0], rot: [0, Math.PI, 0] },
-          unfolded: { pos: [W / 2, 0, -sideH / 2 - 400], rot: [-Math.PI / 2, 0, 0] } },
+          folded:   { pos: [W / 2, fy, dzTotal / 2], rot: [0, Math.PI + skewRot, 0] },
+          unfolded: { pos: [W / 2, 0, -sideH / 2 - 400 + dzTotal / 2], rot: [-Math.PI / 2, 0, 0] } },
         { mesh: a2Mesh,
-          folded:   { pos: [W / 2, fy, L], rot: [0, 0, 0] },
-          unfolded: { pos: [W / 2, 0, L + sideH / 2 + 400], rot: [-Math.PI / 2, 0, 0] } },
+          folded:   { pos: [W / 2, fy, L + dzTotal / 2], rot: [0, skewRot, 0] },
+          unfolded: { pos: [W / 2, 0, L + sideH / 2 + 400 + dzTotal / 2], rot: [-Math.PI / 2, 0, 0] } },
         { mesh: bMesh,
-          folded:   { pos: [0, fy, L / 2], rot: [0, -Math.PI / 2, 0] },
-          unfolded: { pos: [-sideH / 2 - 400, 0, L / 2], rot: [-Math.PI / 2, 0, 0] } },
+          folded:   { pos: [0, fy, L / 2 + zoff(0)], rot: [0, -Math.PI / 2, 0] },
+          unfolded: { pos: [-sideH / 2 - 400, 0, L / 2 + zoff(0)], rot: [-Math.PI / 2, 0, 0] } },
         { mesh: b2Mesh,
-          folded:   { pos: [W, fy, L / 2], rot: [0, Math.PI / 2, 0] },
-          unfolded: { pos: [W + sideH / 2 + 400, 0, L / 2], rot: [-Math.PI / 2, 0, 0] } },
+          folded:   { pos: [W, fy, L / 2 + zoff(W)], rot: [0, Math.PI / 2, 0] },
+          unfolded: { pos: [W + sideH / 2 + 400, 0, L / 2 + zoff(W)], rot: [-Math.PI / 2, 0, 0] } },
       ];
       faces3D.forEach(f => {
         f.mesh.position.set(...f.folded.pos);
@@ -699,7 +732,7 @@
             const x = (W * k) / 24;
             const t01 = (2 * x) / W - 1;                    // -1..1
             const y = topY + camber * exag * (1 - t01 * t01); // 中央で最大
-            pts.push(new THREE.Vector3(x, y, z));
+            pts.push(new THREE.Vector3(x, y, z + zoff(x)));
           }
           deckGrp.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lineMat));
         }
@@ -709,8 +742,8 @@
       const edgeMat = new THREE.LineBasicMaterial({ color: 0x1a5276 });
       for (const y of [deckY0, deckY0 + T]) {
         const pts = [
-          new THREE.Vector3(0, y, 0), new THREE.Vector3(W, y, 0),
-          new THREE.Vector3(W, y, L), new THREE.Vector3(0, y, L), new THREE.Vector3(0, y, 0),
+          new THREE.Vector3(0, y, zoff(0)), new THREE.Vector3(W, y, zoff(W)),
+          new THREE.Vector3(W, y, L + zoff(W)), new THREE.Vector3(0, y, L + zoff(0)), new THREE.Vector3(0, y, zoff(0)),
         ];
         deckGrp.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), edgeMat));
       }
