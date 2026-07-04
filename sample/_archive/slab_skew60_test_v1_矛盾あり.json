@@ -202,31 +202,11 @@
               "id": "A-1-12",
               "row": 1,
               "col": 12,
-              "width_mm": 1800,
+              "width_mm": 700,
               "height_mm": 230,
               "type": "カット",
               "orientation": "横",
-              "cut_note": "230mm幅にカット"
-            },
-            {
-              "id": "A-1-13",
-              "row": 1,
-              "col": 13,
-              "width_mm": 1800,
-              "height_mm": 230,
-              "type": "カット",
-              "orientation": "横",
-              "cut_note": "230mm幅にカット"
-            },
-            {
-              "id": "A-1-14",
-              "row": 1,
-              "col": 14,
-              "width_mm": 272,
-              "height_mm": 230,
-              "type": "カット",
-              "orientation": "横",
-              "cut_note": "斜角60°端部・272mm幅×230mmカット"
+              "cut_note": "700×230mmにカット"
             }
           ],
           "separators": {
@@ -238,7 +218,7 @@
             "rows": 1,
             "length_mm": 178,
             "wall_thickness_mm": 178,
-            "count": 39,
+            "count": 34,
             "note": "版厚230mm以下のため1段のみ"
           }
         },
@@ -252,7 +232,7 @@
           "layout_method": "片追い",
           "panels": [
             {
-              "id": "AD-1-01",
+              "id": "A'-1-01",
               "row": 1,
               "col": 1,
               "width_mm": 1800,
@@ -262,7 +242,7 @@
               "cut_note": "230mm幅にカット"
             },
             {
-              "id": "AD-1-02",
+              "id": "A'-1-02",
               "row": 1,
               "col": 2,
               "width_mm": 1800,
@@ -272,7 +252,7 @@
               "cut_note": "230mm幅にカット"
             },
             {
-              "id": "AD-1-03",
+              "id": "A'-1-03",
               "row": 1,
               "col": 3,
               "width_mm": 1800,
@@ -282,7 +262,7 @@
               "cut_note": "230mm幅にカット"
             },
             {
-              "id": "AD-1-04",
+              "id": "A'-1-04",
               "row": 1,
               "col": 4,
               "width_mm": 1800,
@@ -292,7 +272,7 @@
               "cut_note": "230mm幅にカット"
             },
             {
-              "id": "AD-1-05",
+              "id": "A'-1-05",
               "row": 1,
               "col": 5,
               "width_mm": 1800,
@@ -302,7 +282,7 @@
               "cut_note": "230mm幅にカット"
             },
             {
-              "id": "AD-1-06",
+              "id": "A'-1-06",
               "row": 1,
               "col": 6,
               "width_mm": 1800,
@@ -312,7 +292,7 @@
               "cut_note": "230mm幅にカット"
             },
             {
-              "id": "AD-1-07",
+              "id": "A'-1-07",
               "row": 1,
               "col": 7,
               "width_mm": 1800,
@@ -322,7 +302,7 @@
               "cut_note": "230mm幅にカット"
             },
             {
-              "id": "AD-1-08",
+              "id": "A'-1-08",
               "row": 1,
               "col": 8,
               "width_mm": 1800,
@@ -332,7 +312,7 @@
               "cut_note": "230mm幅にカット"
             },
             {
-              "id": "AD-1-09",
+              "id": "A'-1-09",
               "row": 1,
               "col": 9,
               "width_mm": 1800,
@@ -342,7 +322,7 @@
               "cut_note": "230mm幅にカット"
             },
             {
-              "id": "AD-1-10",
+              "id": "A'-1-10",
               "row": 1,
               "col": 10,
               "width_mm": 1800,
@@ -352,7 +332,7 @@
               "cut_note": "230mm幅にカット"
             },
             {
-              "id": "AD-1-11",
+              "id": "A'-1-11",
               "row": 1,
               "col": 11,
               "width_mm": 1800,
@@ -362,34 +342,14 @@
               "cut_note": "230mm幅にカット"
             },
             {
-              "id": "AD-1-12",
+              "id": "A'-1-12",
               "row": 1,
               "col": 12,
-              "width_mm": 1800,
+              "width_mm": 700,
               "height_mm": 230,
               "type": "カット",
               "orientation": "横",
-              "cut_note": "230mm幅にカット"
-            },
-            {
-              "id": "AD-1-13",
-              "row": 1,
-              "col": 13,
-              "width_mm": 1800,
-              "height_mm": 230,
-              "type": "カット",
-              "orientation": "横",
-              "cut_note": "230mm幅にカット"
-            },
-            {
-              "id": "AD-1-14",
-              "row": 1,
-              "col": 14,
-              "width_mm": 272,
-              "height_mm": 230,
-              "type": "カット",
-              "orientation": "横",
-              "cut_note": "斜角60°端部・272mm幅×230mmカット"
+              "cut_note": "700×230mmにカット"
             }
           ],
           "separators": {
@@ -401,7 +361,7 @@
             "rows": 1,
             "length_mm": 178,
             "wall_thickness_mm": 178,
-            "count": 39,
+            "count": 34,
             "note": "版厚230mm以下のため1段のみ"
           }
         },
@@ -858,7 +818,7 @@
         },
         {
           "face": "A'面",
-          "size": "272×230",
+          "size": "270×230",
           "type": "カット",
           "count": 1,
           "area_m2": 0.06
@@ -872,7 +832,7 @@
         },
         {
           "face": "A面",
-          "size": "272×230",
+          "size": "270×230",
           "type": "カット",
           "count": 1,
           "area_m2": 0.06
@@ -924,14 +884,14 @@
           "type": "C型",
           "diameter": "2分5厘",
           "length_mm": 178,
-          "count": 39
+          "count": 34
         },
         {
           "face": "A'面",
           "type": "C型",
           "diameter": "2分5厘",
           "length_mm": 178,
-          "count": 39
+          "count": 34
         },
         {
           "face": "B面",

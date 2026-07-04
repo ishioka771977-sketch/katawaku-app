@@ -67,12 +67,48 @@
           });
         }
       }
+      return rows;
+    },
+
+    // 汎用整合検証（S1.5）: パネル幅合計=面幅(±1mm)、セパ本数=式(floor((W-2×端あき)/ピッチ)+1)×段数(±1本)
+    // 斜角に限らず全faceで効く。「必ず守ること」第3条(パネル幅合計=面幅)のアプリ側検証。
+    validateIntegrity(data) {
+      const rows = this.validateSkew(data) || [];
+      for (const ph of (data.phases || [])) {
+        for (const f of (ph.faces || [])) {
+          if (f.face_type === 'haunch') continue;
+          // ① パネル幅合計 = 面幅
+          if (Array.isArray(f.panels) && f.panels.length && f.width_mm) {
+            const total = f.panels.reduce((a, p) => a + (p.width_mm || 0), 0);
+            const diff = Math.abs(total - f.width_mm);
+            rows.push({
+              label: `${f.id}面 パネル幅合計`,
+              detail: `${total.toLocaleString()}mm（面幅 ${f.width_mm.toLocaleString()}mm）${diff > 1 ? `差${Math.round(diff).toLocaleString()}mm` : ''}`,
+              ok: diff <= 1,
+            });
+          }
+          // ② セパ本数（式で再計算できる場合のみ）
+          const sp = f.separators;
+          if (sp && sp.pitch_h_mm && sp.edge_margin_mm != null && sp.count != null && f.width_mm) {
+            const perRow = Math.floor((f.width_mm - 2 * sp.edge_margin_mm) / sp.pitch_h_mm) + 1;
+            const expect = perRow * (sp.rows || 1);
+            const diff = Math.abs(sp.count - expect);
+            rows.push({
+              label: `${f.id}面 セパ本数`,
+              detail: `${sp.count}本（式期待 ${expect}本 = (面幅−2×${sp.edge_margin_mm})÷${sp.pitch_h_mm}＋1 ×${sp.rows || 1}段）`,
+              ok: diff <= 1,
+            });
+          }
+        }
+      }
       if (!rows.length) return null;
       const allOk = rows.every(r => r.ok);
+      const skewDeg = data.structure?.dimensions?.skew_angle_deg || 90;
+      const isSkew = Math.abs(skewDeg - 90) > 0.01;
       const trs = rows.map(r =>
         `<tr><td>${r.ok ? '✓' : '⚠'}</td><td>${esc(r.label)}</td><td>${esc(r.detail)}</td></tr>`).join('');
       return `<div class="card"><div class="card-header" style="background:${allOk ? '#eafaf1' : '#fdf2e9'}">` +
-        `斜角検証（θ=${skewDeg}°） — ${allOk ? '<b style="color:#27ae60">整合OK</b>' : '<b style="color:#e67e22">警告あり：妻面寸法・数量を確認</b>'}` +
+        `整合検証${isSkew ? `（斜角θ=${skewDeg}°）` : ''} — ${allOk ? '<b style="color:#27ae60">整合OK</b>' : '<b style="color:#e67e22">警告あり：寸法・割付・数量を確認</b>'}` +
         `</div><div class="card-body"><table>${trs}</table></div></div>`;
     },
 
@@ -85,7 +121,7 @@
       const joints = s.joints || {};
       const conJoints = joints.construction_joints || [];
       const expJoints = joints.expansion_joints || [];
-      const skewHtml = this.validateSkew(data) || '';
+      const skewHtml = this.validateIntegrity(data) || '';
 
       let faceSummary = '';
       if (data.phases) {
