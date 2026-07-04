@@ -28,6 +28,54 @@
     // ============================================================
     // Overview
     // ============================================================
+    // 斜角の整合検証（S1）: ①妻面長=幅員/sinθ(±1mm) ②妻型枠面積が直橋比1/sinθ倍(±5%)
+    validateSkew(data) {
+      const d = data.structure?.dimensions || {};
+      const skewDeg = d.skew_angle_deg || 90;
+      if (Math.abs(skewDeg - 90) <= 0.01 || !d.width_mm) return null;
+      const sinT = Math.sin(skewDeg * Math.PI / 180);
+      const expectLen = d.width_mm / sinT;
+      const rows = [];
+      // ① 妻面（A/A'）の width_mm
+      for (const ph of (data.phases || [])) {
+        for (const f of (ph.faces || [])) {
+          if (f.id === 'A' || f.id === "A'") {
+            const diff = Math.abs((f.width_mm || 0) - expectLen);
+            rows.push({
+              label: `${f.id}面 妻面長`,
+              detail: `${(f.width_mm||0).toLocaleString()}mm（期待 ${Math.round(expectLen).toLocaleString()}mm = 幅員÷sin${skewDeg}°）`,
+              ok: diff <= 1,
+            });
+          }
+        }
+      }
+      // ② quantities.panels.summary の妻型枠面積（直橋比 1/sinθ 倍）
+      const sum = data.quantities?.panels?.summary;
+      if (Array.isArray(sum)) {
+        for (const faceId of ['A', "A'"]) {
+          const items = sum.filter(r => (r.face || '').startsWith(faceId + '面') || r.face === faceId);
+          if (!items.length) continue;
+          const actual = items.reduce((a, r) => a + (r.area_m2 || 0), 0);
+          const faceH = (data.phases || []).flatMap(p => p.faces || []).find(f => f.id === faceId)?.height_mm || 0;
+          if (!faceH) continue;
+          const expect = expectLen * faceH / 1e6;
+          const ratio = expect > 0 ? actual / expect : 0;
+          rows.push({
+            label: `${faceId}面 型枠面積`,
+            detail: `${actual.toFixed(2)}m²（期待 ${expect.toFixed(2)}m² = 直橋の1/sin${skewDeg}°倍）`,
+            ok: Math.abs(ratio - 1) <= 0.05,
+          });
+        }
+      }
+      if (!rows.length) return null;
+      const allOk = rows.every(r => r.ok);
+      const trs = rows.map(r =>
+        `<tr><td>${r.ok ? '✓' : '⚠'}</td><td>${esc(r.label)}</td><td>${esc(r.detail)}</td></tr>`).join('');
+      return `<div class="card"><div class="card-header" style="background:${allOk ? '#eafaf1' : '#fdf2e9'}">` +
+        `斜角検証（θ=${skewDeg}°） — ${allOk ? '<b style="color:#27ae60">整合OK</b>' : '<b style="color:#e67e22">警告あり：妻面寸法・数量を確認</b>'}` +
+        `</div><div class="card-body"><table>${trs}</table></div></div>`;
+    },
+
     buildOverview(data) {
       const s = data.structure;
       const d = s.dimensions || {};
@@ -37,6 +85,7 @@
       const joints = s.joints || {};
       const conJoints = joints.construction_joints || [];
       const expJoints = joints.expansion_joints || [];
+      const skewHtml = this.validateSkew(data) || '';
 
       let faceSummary = '';
       if (data.phases) {
@@ -58,6 +107,7 @@
 
       const el = document.getElementById('view-overview');
       el.innerHTML = `
+        ${skewHtml}
         <div class="card"><div class="card-header">全体確認図 — ${esc(data.project?.name||'')}</div><div class="card-body">
           <div class="overview-grid">
             <div class="info-box">
@@ -66,6 +116,7 @@
                 <tr><td>形式</td><td>${esc(s.subtype||s.type||'')}</td></tr>
                 <tr><td>橋幅</td><td>${d.width_mm ? d.width_mm.toLocaleString()+'mm' : '-'}</td></tr>
                 <tr><td>桁長</td><td>${d.length_mm ? d.length_mm.toLocaleString()+'mm' : '-'}</td></tr>
+                <tr><td>斜角</td><td>${d.skew_angle_deg && Math.abs(d.skew_angle_deg-90)>0.01 ? `<b style="color:#c0392b">${d.skew_angle_deg}°（斜橋・${d.skew_direction==='left'?'左':'右'}振れ）</b>` : '90°（直橋）'}</td></tr>
                 <tr><td>版厚</td><td>${d.thickness_mm||'-'}mm</td></tr>
                 <tr><td>主桁</td><td>${g.count||'-'}本 @${g.spacing_mm||'-'}mm</td></tr>
                 <tr><td>底鋼板</td><td>${bp.exists ? 't='+bp.thickness_mm+'mm（'+bp.material+'）' : 'なし'}</td></tr>
@@ -119,26 +170,54 @@
 
       let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${svgW} ${svgH}" width="${svgW}" height="${svgH}" style="font-family:'BIZ UDPGothic',sans-serif">`;
 
-      // Plan view
+      // Plan view（斜角時は平行四辺形。skew_angle_deg=支承線∠橋軸、90=直橋）
       const planW = svgW - margin*2, planH = 130;
       const planX = margin, planY = 30;
       const scaleX = planW / d.length_mm;
       const scaleY = planH / d.width_mm;
-
-      svg += `<rect x="${planX}" y="${planY}" width="${planW}" height="${planH}" fill="#e8f4fd" stroke="#1a5276" stroke-width="2"/>`;
-      svg += `<text x="${planX + planW/2}" y="${planY - 8}" text-anchor="middle" font-size="13" font-weight="bold" fill="#1a5276">平面図（見下ろし）</text>`;
+      const skewDeg = d.skew_angle_deg || 90;
+      const isSkew = Math.abs(skewDeg - 90) > 0.01;
+      const skewRad = skewDeg * Math.PI / 180;
+      // 食い違い量（幅員全体で橋軸方向にずれる量）。'right'=B面(上辺)側がA2方向(+X)へ
+      const dxMm = isSkew ? d.width_mm / Math.tan(skewRad) : 0;
+      const dxPx = dxMm * scaleX * (d.skew_direction === 'left' ? -1 : 1);
+      // 上辺(B面,y=planY)が dxPx シフトした平行四辺形
+      const px = (yRel) => dxPx * (1 - yRel); // yRel: 0=上辺, 1=下辺 のシフト量
+      if (isSkew) {
+        svg += `<polygon points="${planX + dxPx},${planY} ${planX + planW + dxPx},${planY} ${planX + planW},${planY + planH} ${planX},${planY + planH}" fill="#e8f4fd" stroke="#1a5276" stroke-width="2"/>`;
+        // 端部カット帯（橋軸直角流しのパネルが支承線にかかる範囲）
+        const cutFill = 'rgba(231,76,60,0.12)';
+        if (dxPx >= 0) {
+          svg += `<polygon points="${planX},${planY + planH} ${planX + dxPx},${planY} ${planX + dxPx},${planY + planH}" fill="${cutFill}"/>`;
+          svg += `<polygon points="${planX + planW},${planY + planH} ${planX + planW + dxPx},${planY} ${planX + planW},${planY}" fill="${cutFill}"/>`;
+        } else {
+          svg += `<polygon points="${planX + dxPx},${planY} ${planX},${planY + planH} ${planX},${planY}" fill="${cutFill}"/>`;
+          svg += `<polygon points="${planX + planW + dxPx},${planY} ${planX + planW},${planY + planH} ${planX + planW + dxPx},${planY + planH}" fill="${cutFill}"/>`;
+        }
+        svg += `<text x="${planX + Math.abs(dxPx)/2 + 4}" y="${planY + planH - 6}" font-size="8" fill="#c0392b">端部カット帯</text>`;
+      } else {
+        svg += `<rect x="${planX}" y="${planY}" width="${planW}" height="${planH}" fill="#e8f4fd" stroke="#1a5276" stroke-width="2"/>`;
+      }
+      svg += `<text x="${planX + planW/2}" y="${planY - 8}" text-anchor="middle" font-size="13" font-weight="bold" fill="#1a5276">平面図（見下ろし）${isSkew ? `— 斜角${skewDeg}°` : ''}</text>`;
 
       if (g.count && g.spacing_mm) {
         for (let i = 0; i < g.count; i++) {
-          const gy = planY + (i * g.spacing_mm + (d.width_mm - (g.count-1)*g.spacing_mm)/2) * scaleY;
-          svg += `<line x1="${planX}" y1="${gy}" x2="${planX+planW}" y2="${gy}" stroke="#888" stroke-width="1" stroke-dasharray="4,4"/>`;
+          const gyRel = (i * g.spacing_mm + (d.width_mm - (g.count-1)*g.spacing_mm)/2) / d.width_mm;
+          const gy = planY + gyRel * planH;
+          // 主桁は橋軸平行のまま、支承線(斜め辺)まで＝桁ごとに端部がずれる
+          const gShift = isSkew ? px(gyRel) : 0;
+          svg += `<line x1="${planX + gShift}" y1="${gy}" x2="${planX + planW + gShift}" y2="${gy}" stroke="#888" stroke-width="1" stroke-dasharray="4,4"/>`;
           if (i === 0 || i === g.count-1 || i === 7) {
-            svg += `<text x="${planX - 4}" y="${gy + 4}" text-anchor="end" font-size="9" fill="#888">${g.labels?.[i]||''}</text>`;
+            svg += `<text x="${planX + gShift - 4}" y="${gy + 4}" text-anchor="end" font-size="9" fill="#888">${g.labels?.[i]||''}</text>`;
           }
         }
       }
 
-      svg += `<text x="${planX + planW/2}" y="${planY - 22}" text-anchor="middle" font-size="11" fill="#e74c3c">← A面（${d.width_mm?.toLocaleString()}mm）→</text>`;
+      const skewFaceLenMm = isSkew ? Math.round(d.width_mm / Math.sin(skewRad)) : d.width_mm;
+      svg += `<text x="${planX + planW/2}" y="${planY - 22}" text-anchor="middle" font-size="11" fill="#e74c3c">← A面（${isSkew ? `実長${skewFaceLenMm.toLocaleString()}mm・斜角${skewDeg}°` : `${d.width_mm?.toLocaleString()}mm`}）→</text>`;
+      if (isSkew) {
+        svg += `<text x="${planX + planW/2}" y="${planY + planH + 30}" text-anchor="middle" font-size="9" fill="#c0392b">食い違い量 ${Math.round(Math.abs(dxMm)).toLocaleString()}mm（= 幅員 ÷ tan${skewDeg}°）／ 妻面実長 ${skewFaceLenMm.toLocaleString()}mm（= 幅員 ÷ sin${skewDeg}°）</text>`;
+      }
       svg += `<text x="${planX - 8}" y="${planY + planH/2}" text-anchor="end" font-size="11" fill="#2980b9" transform="rotate(-90,${planX-8},${planY+planH/2})">B面（${d.length_mm?.toLocaleString()}mm）</text>`;
       svg += `<text x="${planX + planW + 8}" y="${planY + planH/2}" text-anchor="start" font-size="11" fill="#2980b9" transform="rotate(90,${planX+planW+8},${planY+planH/2})">B'面</text>`;
       svg += dimLine(planX, planY + planH + 15, planX + planW, planY + planH + 15, `${d.length_mm?.toLocaleString()}mm（桁長）`);
