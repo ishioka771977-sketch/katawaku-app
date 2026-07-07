@@ -43,6 +43,38 @@
     // ============================================================
     // Overview
     // ============================================================
+    // 斜め端部の検証（S4）: 地覆・壁高欄の斜角は「両端部だけ」の問題。
+    // 本体(断面・延長・割付・セパ)は直橋と同一。効くのは妻面幅(w/sinθ)・側面長差(w/tanθ)・AB端部余裕。
+    // AB positions の x_mm は従来通り「A1端の橋軸直交面からの追い距離(直角投影)」で書く。
+    validateSkewEnd(data) {
+      const s = data.structure;
+      const skewDeg = s.skew_angle_deg || 90;
+      if (Math.abs(skewDeg - 90) <= 0.01) return '';
+      const rad = skewDeg * Math.PI / 180, sn = Math.sin(rad), tn = Math.tan(rad);
+      const curb = s.components?.curb || {};
+      const barrier = s.components?.barrier || {};
+      const L = curb.length_mm || barrier.length_mm || 0;
+      const rows = [];
+      for (const [nm, w] of [['地覆底版', curb.base_width_mm], ['地覆', curb.width_mm], ['壁高欄基部', barrier.width_base_mm]]) {
+        if (w) rows.push({ label: `${nm} 妻面幅`, detail: `${Math.round(w / sn).toLocaleString()}mm（= ${w} ÷ sin${skewDeg}°）`, ok: true });
+      }
+      for (const [nm, w] of [['地覆底版', curb.base_width_mm], ['壁高欄基部', barrier.width_base_mm]]) {
+        if (w) rows.push({ label: `${nm} 側面長差`, detail: `車道側と外側で ${Math.round(w / tn).toLocaleString()}mm（= ${w} ÷ tan${skewDeg}°。向きは skew_direction と図面で確認）`, ok: true });
+      }
+      const ps = (s.anchor_bolts?.positions || []).map(p => p.x_mm).filter(x => x != null);
+      if (ps.length && L) {
+        const wB = barrier.width_base_mm || 300;
+        const margin = Math.min(Math.min(...ps), L - Math.max(...ps)) - wB / tn;
+        rows.push({ label: 'AB端部余裕（最小）', detail: `${Math.round(margin).toLocaleString()}mm（端部AB追い距離 − 幅÷tanθ。負値=斜め端面からはみ出し）`, ok: margin > 0 });
+      }
+      if (!rows.length) return '';
+      const allOk = rows.every(r => r.ok);
+      const trs = rows.map(r => `<tr><td>${r.ok ? '✓' : '⚠'}</td><td>${esc(r.label)}</td><td>${esc(r.detail)}</td></tr>`).join('');
+      return `<div class="card"><div class="card-header" style="background:${allOk ? '#eafaf1' : '#fdf2e9'}">` +
+        `斜め端部検証（斜角θ=${skewDeg}°・両端部のみ／本体は直橋と同一） — ${allOk ? '<b style="color:#27ae60">整合OK</b>' : '<b style="color:#e67e22">警告あり：AB位置を確認</b>'}` +
+        `</div><div class="card-body"><table>${trs}</table></div></div>`;
+    },
+
     buildOverview(data) {
       const s = data.structure;
       const curb = s.components?.curb || {};
@@ -72,6 +104,7 @@
 
       const el = document.getElementById('view-overview');
       el.innerHTML = `
+        ${this.validateSkewEnd(data)}
         <div class="card">
           <div class="card-header">全体確認図 — ${esc(s.name||'')}</div>
           <div class="card-body">
