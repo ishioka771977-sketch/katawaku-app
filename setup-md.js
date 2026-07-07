@@ -83,9 +83,14 @@ async function smdRenderBadge(buttonId, hintId, app = 'katachi') {
   if (hint) {
     if (info.version === 0) {
       const sb = smdSb();
+      // sb未生成(ライブラリ読込遅延等)は一時状態のことが多いため、1回だけ自動再試行する
       hint.innerHTML = sb
         ? `<span style="color:#999">まだ登録されていません</span>`
-        : `<span style="color:#c0392b">⚠ 認証読込中...再読込してみてください</span>`;
+        : `<span style="color:#c0392b">⚠ 接続準備中...数秒後に自動で再試行します（続く場合は再読込）</span>`;
+      if (!sb && !window.__smdBadgeRetried) {
+        window.__smdBadgeRetried = true;
+        setTimeout(() => { try { smdRenderBadge(buttonId, hintId, app); } catch (e) { console.error('[smd] retry err', e); } }, 3000);
+      }
     } else {
       const updated = info.latestUpdatedAt ? new Date(info.latestUpdatedAt).toLocaleDateString('ja-JP') : '-';
       const fetched = info.lastFetchedAt ? new Date(info.lastFetchedAt).toLocaleDateString('ja-JP') : '未取得';
