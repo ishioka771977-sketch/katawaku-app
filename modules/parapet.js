@@ -75,10 +75,17 @@
         `</div><div class="card-body"><table>${trs}</table></div></div>`;
     },
 
+    // 壁高欄の有無（v8: components.barrier が無い/null/空なら地覆単体として扱う）
+    _hasBarrier(s) {
+      const b = s.components?.barrier;
+      return !!(b && typeof b === 'object' && Object.keys(b).length > 0);
+    },
+
     buildOverview(data) {
       const s = data.structure;
       const curb = s.components?.curb || {};
       const barrier = s.components?.barrier || {};
+      const hasBarrier = this._hasBarrier(s);
       const ab = s.anchor_bolts || {};
       const cj = s.construction_joint || {};
       const joints = s.joints || {};
@@ -112,8 +119,10 @@
               <div class="info-box">
                 <h4>地覆</h4>
                 <table>
-                  <tr><td>断面形状</td><td>${esc(curb.profile||'L字型')}</td></tr>
-                  <tr><td>幅（立上り）</td><td>${curb.width_mm||'-'}mm</td></tr>
+                  <tr><td>断面形状</td><td>${esc(curb.profile|| (curb.width_top_mm && curb.width_top_mm !== curb.width_mm ? '台形（前面傾斜）' : 'L字型'))}</td></tr>
+                  <tr><td>幅（下端）</td><td>${curb.width_mm||'-'}mm</td></tr>
+                  ${curb.width_top_mm ? `<tr><td>幅（上端）</td><td>${curb.width_top_mm}mm</td></tr>` : ''}
+                  ${curb.front_slope_bottom_mm ? `<tr><td>前面下部垂直</td><td>${curb.front_slope_bottom_mm}mm</td></tr>` : ''}
                   <tr><td>高さ（立上り）</td><td>${curb.height_mm||'-'}mm</td></tr>
                   <tr><td>底版幅</td><td>${curb.base_width_mm||'-'}mm</td></tr>
                   <tr><td>底版厚</td><td>${curb.base_thickness_mm||'-'}mm</td></tr>
@@ -121,7 +130,7 @@
                   <tr><td>水抜き</td><td>VP${curb.drain_pipe?.diameter_mm||'-'} @${curb.drain_pipe?.spacing_mm||'-'}mm</td></tr>
                 </table>
               </div>
-              <div class="info-box">
+              ${hasBarrier ? `<div class="info-box">
                 <h4>壁高欄</h4>
                 <table>
                   <tr><td>天端幅</td><td>${barrier.width_top_mm||'-'}mm</td></tr>
@@ -131,8 +140,11 @@
                   <tr><td>延長</td><td>${barrier.length_mm ? (barrier.length_mm/1000).toFixed(1)+'m' : '-'}</td></tr>
                   <tr><td>伸縮目地</td><td>@${barrier.expansion_joint_pitch_mm||'-'}mm</td></tr>
                 </table>
-              </div>
-              <div class="info-box">
+              </div>` : `<div class="info-box">
+                <h4>壁高欄</h4>
+                <table><tr><td>なし</td><td>地覆単体（barrier未指定）</td></tr></table>
+              </div>`}
+              ${hasBarrier || ab.positions?.length ? `<div class="info-box">
                 <h4>アンカーボルト</h4>
                 <table>
                   <tr><td>径</td><td>M${ab.diameter_mm||'-'}</td></tr>
@@ -141,7 +153,7 @@
                   <tr><td>本数</td><td>${ab.positions?.length||'-'}本</td></tr>
                   <tr><td>備考</td><td>${esc(ab.note||'')}</td></tr>
                 </table>
-              </div>
+              </div>` : ''}
               <div class="info-box">
                 <h4>打設フェーズ</h4>
                 <table>
@@ -190,13 +202,14 @@
       const s = data.structure;
       const curb = s.components?.curb || {};
       const barrier = s.components?.barrier || {};
+      const hasBarrier = this._hasBarrier(s);
 
       const svgW = 500, svgH = 350;
       const cx = svgW / 2;
       const baseY = svgH - 60; // bed slab top line
 
-      // Scale: ~0.2px per mm
-      const sc = 0.18;
+      // Scale: ~0.2px per mm（地覆単体時は大きめに表示）
+      const sc = hasBarrier ? 0.18 : 0.34;
 
       // Slab
       const slabW = 300, slabH = 16;
@@ -204,13 +217,17 @@
       // Curb dimensions
       const cW = (curb.width_mm||350)*sc;
       const cH = (curb.height_mm||350)*sc;
-      const cBW = (curb.base_width_mm||500)*sc;
-      const cBH = (curb.base_thickness_mm||100)*sc;
+      const cBW = (curb.base_width_mm||curb.width_mm||500)*sc;
+      const cBH = (curb.base_thickness_mm||0)*sc;
+      // 台形（前面傾斜）v8: 上幅と下部垂直
+      const cWt = (curb.width_top_mm||curb.width_mm||350)*sc;
+      const cFv = (curb.front_slope_bottom_mm||0)*sc;
+      const isTaper = curb.width_top_mm && curb.width_top_mm !== curb.width_mm;
 
       // Barrier dimensions
       const bWt = (barrier.width_top_mm||200)*sc;
       const bWb = (barrier.width_base_mm||300)*sc;
-      const bH = (barrier.height_mm||1000)*sc;
+      const bH = hasBarrier ? (barrier.height_mm||1000)*sc : 0;
 
       // Positions (centered on curb)
       const curbLeft = cx - cBW/2;
@@ -232,52 +249,68 @@
       svg += `<text x="${cx}" y="${baseY+slabH+12}" text-anchor="middle" font-size="9" fill="#666">床版上面（打継ぎ面）</text>`;
 
       // Curb base (blue-tint)
-      svg += `<rect x="${curbLeft}" y="${curbBaseTop}" width="${cBW}" height="${cBH}" fill="#d6eaf8" stroke="#1a5276" stroke-width="1.2"/>`;
+      if (cBH > 0) {
+        svg += `<rect x="${curbLeft}" y="${curbBaseTop}" width="${cBW}" height="${cBH}" fill="#d6eaf8" stroke="#1a5276" stroke-width="1.2"/>`;
+        svg += `<text x="${curbLeft-5}" y="${curbBaseTop+cBH/2+3}" text-anchor="end" font-size="8" fill="#1a5276">底版 ${curb.base_width_mm||500}×${curb.base_thickness_mm||100}</text>`;
+      }
 
-      // Curb upstand
+      // Curb upstand（台形時は前面=CA側（左）が傾斜する六角形/台形）
       const upstandLeft = cx - cW/2;
       const upstandRight = cx + cW/2;
-      svg += `<rect x="${upstandLeft}" y="${curbTop}" width="${cW}" height="${cH}" fill="#d6eaf8" stroke="#1a5276" stroke-width="1.2"/>`;
-
-      // Labels for curb
-      svg += `<text x="${curbLeft-5}" y="${curbBaseTop+cBH/2+3}" text-anchor="end" font-size="8" fill="#1a5276">底版 ${curb.base_width_mm||500}×${curb.base_thickness_mm||100}</text>`;
-      svg += `<text x="${upstandLeft-5}" y="${curbTop+cH/2+3}" text-anchor="end" font-size="8" fill="#1a5276">地覆 ${curb.width_mm||350}×${curb.height_mm||350}</text>`;
+      if (isTaper) {
+        const slantX = upstandLeft + (cW - cWt); // 上端の左位置（上幅が狭い分だけ内側へ）
+        const vertY = curbBaseTop - cFv;          // 前面下部垂直の上端
+        const pts = [
+          `${upstandLeft},${curbBaseTop}`,
+          `${upstandLeft},${vertY}`,
+          `${slantX},${curbTop}`,
+          `${upstandRight},${curbTop}`,
+          `${upstandRight},${curbBaseTop}`,
+        ].join(' ');
+        svg += `<polygon points="${pts}" fill="#d6eaf8" stroke="#1a5276" stroke-width="1.2"/>`;
+        svg += `<text x="${upstandLeft-5}" y="${curbTop+cH/2+3}" text-anchor="end" font-size="8" fill="#1a5276">地覆 上${curb.width_top_mm}/下${curb.width_mm}×${curb.height_mm||'-'}</text>`;
+      } else {
+        svg += `<rect x="${upstandLeft}" y="${curbTop}" width="${cW}" height="${cH}" fill="#d6eaf8" stroke="#1a5276" stroke-width="1.2"/>`;
+        svg += `<text x="${upstandLeft-5}" y="${curbTop+cH/2+3}" text-anchor="end" font-size="8" fill="#1a5276">地覆 ${curb.width_mm||350}×${curb.height_mm||350}</text>`;
+      }
 
       // Face labels
       svg += `<text x="${upstandLeft-2}" y="${curbTop+cH/2-8}" text-anchor="end" font-size="7" fill="#e74c3c">CA面→</text>`;
       svg += `<text x="${upstandRight+2}" y="${curbTop+cH/2-8}" text-anchor="start" font-size="7" fill="#e74c3c">←CB面</text>`;
 
-      // Barrier (green-tint, trapezoid if taper)
-      if (barrier.taper) {
-        const pts = `${wallLeft_b},${curbTop} ${wallRight_b},${curbTop} ${wallRight_t},${wallTop} ${wallLeft_t},${wallTop}`;
-        svg += `<polygon points="${pts}" fill="#d5f5e3" stroke="#1e8449" stroke-width="1.2"/>`;
-      } else {
-        svg += `<rect x="${wallLeft_b}" y="${wallTop}" width="${bWb}" height="${bH}" fill="#d5f5e3" stroke="#1e8449" stroke-width="1.2"/>`;
+      const dimX = Math.max(wallRight_b, upstandRight) + 25;
+      if (hasBarrier) {
+        // Barrier (green-tint, trapezoid if taper)
+        if (barrier.taper) {
+          const pts = `${wallLeft_b},${curbTop} ${wallRight_b},${curbTop} ${wallRight_t},${wallTop} ${wallLeft_t},${wallTop}`;
+          svg += `<polygon points="${pts}" fill="#d5f5e3" stroke="#1e8449" stroke-width="1.2"/>`;
+        } else {
+          svg += `<rect x="${wallLeft_b}" y="${wallTop}" width="${bWb}" height="${bH}" fill="#d5f5e3" stroke="#1e8449" stroke-width="1.2"/>`;
+        }
+
+        // Labels for barrier
+        svg += `<text x="${wallLeft_t-5}" y="${wallTop+bH/2+3}" text-anchor="end" font-size="8" fill="#1e8449">壁高欄 H=${barrier.height_mm||1000}</text>`;
+        svg += `<text x="${wallLeft_t-2}" y="${wallTop+bH/2+14}" text-anchor="end" font-size="7" fill="#e74c3c">WA面→</text>`;
+        svg += `<text x="${wallRight_t+2}" y="${wallTop+bH/2+14}" text-anchor="start" font-size="7" fill="#e74c3c">←WB面</text>`;
+
+        // AB symbol on top
+        const abX = cx;
+        svg += `<polygon points="${abX},${wallTop-2} ${abX-5},${wallTop-12} ${abX+5},${wallTop-12}" fill="none" stroke="#e74c3c" stroke-width="1.2"/>`;
+        svg += `<text x="${abX}" y="${wallTop-15}" text-anchor="middle" font-size="7" fill="#e74c3c">AB (M${s.anchor_bolts?.diameter_mm||20})</text>`;
+
+        // Top label
+        svg += `<text x="${cx}" y="${wallTop+12}" text-anchor="middle" font-size="7" fill="#666">t=${barrier.width_top_mm||200}</text>`;
+        svg += `<text x="${cx}" y="${curbTop+12}" text-anchor="middle" font-size="7" fill="#666">t=${barrier.width_base_mm||300}</text>`;
+
+        // Dimension: barrier height
+        svg += dimLineV(dimX, wallTop, dimX, curbTop, `${barrier.height_mm||1000}`);
       }
-
-      // Labels for barrier
-      svg += `<text x="${wallLeft_t-5}" y="${wallTop+bH/2+3}" text-anchor="end" font-size="8" fill="#1e8449">壁高欄 H=${barrier.height_mm||1000}</text>`;
-      svg += `<text x="${wallLeft_t-2}" y="${wallTop+bH/2+14}" text-anchor="end" font-size="7" fill="#e74c3c">WA面→</text>`;
-      svg += `<text x="${wallRight_t+2}" y="${wallTop+bH/2+14}" text-anchor="start" font-size="7" fill="#e74c3c">←WB面</text>`;
-
-      // AB symbol on top
-      const abX = cx;
-      svg += `<polygon points="${abX},${wallTop-2} ${abX-5},${wallTop-12} ${abX+5},${wallTop-12}" fill="none" stroke="#e74c3c" stroke-width="1.2"/>`;
-      svg += `<text x="${abX}" y="${wallTop-15}" text-anchor="middle" font-size="7" fill="#e74c3c">AB (M${s.anchor_bolts?.diameter_mm||20})</text>`;
-
-      // Top label
-      svg += `<text x="${cx}" y="${wallTop+12}" text-anchor="middle" font-size="7" fill="#666">t=${barrier.width_top_mm||200}</text>`;
-      svg += `<text x="${cx}" y="${curbTop+12}" text-anchor="middle" font-size="7" fill="#666">t=${barrier.width_base_mm||300}</text>`;
-
-      // Dimension: barrier height
-      const dimX = wallRight_b + 25;
-      svg += dimLineV(dimX, wallTop, dimX, curbTop, `${barrier.height_mm||1000}`);
 
       // Dimension: curb height
       svg += dimLineV(dimX, curbTop, dimX, curbBaseTop, `${curb.height_mm||350}`);
 
       // Dimension: base thickness
-      svg += dimLineV(dimX, curbBaseTop, dimX, baseY, `${curb.base_thickness_mm||100}`);
+      if (cBH > 0) svg += dimLineV(dimX, curbBaseTop, dimX, baseY, `${curb.base_thickness_mm||100}`);
 
       // CT label
       svg += `<text x="${cx}" y="${curbTop-3}" text-anchor="middle" font-size="7" fill="#e74c3c">CT面(天端)</text>`;
@@ -790,15 +823,34 @@
       const s = data.structure;
       const curb = s.components?.curb || {};
       const barrier = s.components?.barrier || {};
+      const hasBarrier = this._hasBarrier(s); // v8: barrier未指定なら地覆単体
+
+      // Face data helper（面高さの実値参照に使うため先に定義）
+      const ff = id => {
+        for (const ph of (data.phases || [])) {
+          for (const f of (ph.faces || [])) {
+            if (f.id === id) return f;
+          }
+        }
+        return { id, name: id, panels: [], separators: null };
+      };
 
       const L = curb.length_mm || 20000;
-      const baseT = curb.base_thickness_mm || 100;
+      const baseT = curb.base_thickness_mm || 0;
       const curbW = curb.width_mm || 350;
-      const curbH = curb.height_mm || 350;
-      const fH_c = 400;  // curb face height (from face data)
-      const fH_w = 1050; // wall face height (from face data)
+      // v8: 面高さは面データ→components の順で実値を使う（旧: 400/1050固定）
+      const fH_c = ff('CA').height_mm || curb.height_mm || 400;
+      const fH_w = hasBarrier ? (ff('WA').height_mm || barrier.height_mm || 1050) : 0;
       const barrierWb = barrier.width_base_mm || 300;
       const bZoff = (curbW - barrierWb) / 2; // barrier offset from curb edge
+
+      // v8: 台形断面（前面=CA側の傾斜）。width_top_mm と front_slope_bottom_mm で表現
+      const wTop = curb.width_top_mm || curbW;
+      const slantIn = Math.max(0, curbW - wTop);
+      const frontVert = Math.min(curb.front_slope_bottom_mm || 0, fH_c);
+      const isTaper = slantIn > 0;
+      const slantLen = isTaper ? Math.round(Math.hypot(fH_c - frontVert, slantIn)) : fH_c;
+      const slantTilt = isTaper ? Math.atan2(slantIn, fH_c - frontVert) : 0;
 
       // Camera target: center of assembled model
       set3DCameraTarget(L / 2, (baseT + fH_c + fH_w) / 2, curbW / 2, Math.max(L * 0.5, 8000));
@@ -811,34 +863,42 @@
       scene.add(slab);
 
       // Base plate (translucent)
-      const baseGeo = new THREE.BoxGeometry(L, baseT, curb.base_width_mm || 500);
-      const baseMat = new THREE.MeshLambertMaterial({ color: 0xd6eaf8, transparent: true, opacity: 0.4 });
-      const baseMesh = new THREE.Mesh(baseGeo, baseMat);
-      baseMesh.position.set(L / 2, baseT / 2, curbW / 2);
-      scene.add(baseMesh);
-
-      // Face data helper
-      const ff = id => {
-        for (const ph of (data.phases || [])) {
-          for (const f of (ph.faces || [])) {
-            if (f.id === id) return f;
-          }
-        }
-        return { id, name: id, panels: [], separators: null };
-      };
+      if (baseT > 0) {
+        const baseGeo = new THREE.BoxGeometry(L, baseT, curb.base_width_mm || 500);
+        const baseMat = new THREE.MeshLambertMaterial({ color: 0xd6eaf8, transparent: true, opacity: 0.4 });
+        const baseMesh = new THREE.Mesh(baseGeo, baseMat);
+        baseMesh.position.set(L / 2, baseT / 2, curbW / 2);
+        scene.add(baseMesh);
+      }
 
       // Create face meshes
       const caFace = ff('CA'), cbFace = ff('CB'), ctFace = ff('CT');
-      const waFace = ff('WA'), wbFace = ff('WB');
 
-      const caMesh = createFaceMesh(caFace, L, fH_c);
+      const caMesh = createFaceMesh(caFace, L, isTaper ? slantLen : fH_c);
       const cbMesh = createFaceMesh(cbFace, L, fH_c);
-      const ctMesh = createFaceMesh(ctFace, L, curbW);
-      const waMesh = createFaceMesh(waFace, L, fH_w);
-      const wbMesh = createFaceMesh(wbFace, L, fH_w);
+      const ctMesh = createFaceMesh(ctFace, L, wTop);
+      const meshList = [caMesh, cbMesh, ctMesh];
+
+      let waMesh = null, wbMesh = null;
+      if (hasBarrier) {
+        const waFace = ff('WA'), wbFace = ff('WB');
+        waMesh = createFaceMesh(waFace, L, fH_w);
+        wbMesh = createFaceMesh(wbFace, L, fH_w);
+        meshList.push(waMesh, wbMesh);
+      }
 
       // Add all to scene
-      [caMesh, cbMesh, ctMesh, waMesh, wbMesh].forEach(m => scene.add(m));
+      meshList.forEach(m => scene.add(m));
+
+      // 前面下部の垂直部（台形時のみ・無地の合板色）
+      if (isTaper && frontVert > 0) {
+        const lowGeo = new THREE.PlaneGeometry(L, frontVert);
+        const lowMat = new THREE.MeshLambertMaterial({ color: 0xf0e6d3, side: THREE.DoubleSide, transparent: true, opacity: 0.9 });
+        const lowMesh = new THREE.Mesh(lowGeo, lowMat);
+        lowMesh.position.set(L / 2, baseT + frontVert / 2, 0);
+        lowMesh.rotation.set(0, Math.PI, 0);
+        scene.add(lowMesh);
+      }
 
       // ---- Define folded & unfolded positions ----
       // Folded: assembled 3D positions
@@ -856,12 +916,16 @@
       const faces3D = [
         {
           mesh: caMesh,
-          folded: {
+          folded: isTaper ? {
+            // 傾斜前面: 下端(z=0, y=baseT+frontVert) → 上端(z=slantIn, y=baseT+fH_c)
+            pos: [L/2, baseT + frontVert + (fH_c - frontVert)/2, slantIn/2],
+            rot: [slantTilt, Math.PI, 0]
+          } : {
             pos: [L/2, baseT + fH_c/2, 0],
             rot: [0, Math.PI, 0]  // face -Z (road side)
           },
           unfolded: {
-            pos: [L/2, baseT, -fH_c/2],
+            pos: [L/2, baseT, -(isTaper ? slantLen : fH_c)/2],
             rot: [-Math.PI/2, 0, 0]  // flat
           }
         },
@@ -879,37 +943,42 @@
         {
           mesh: ctMesh,
           folded: {
-            pos: [L/2, baseT + fH_c, curbW/2],
+            pos: [L/2, baseT + fH_c, isTaper ? slantIn + wTop/2 : curbW/2],
             rot: [-Math.PI/2, 0, 0]  // horizontal, face up
           },
           unfolded: {
             pos: [L/2, baseT, -(fH_c + curbW/2)],
             rot: [-Math.PI/2, 0, 0]
           }
-        },
-        {
-          mesh: waMesh,
-          folded: {
-            pos: [L/2, baseT + fH_c + fH_w/2, bZoff],
-            rot: [0, Math.PI, 0]  // face -Z (road side)
-          },
-          unfolded: {
-            pos: [L/2, baseT, -(fH_c + curbW + fH_w/2)],
-            rot: [-Math.PI/2, 0, 0]
-          }
-        },
-        {
-          mesh: wbMesh,
-          folded: {
-            pos: [L/2, baseT + fH_c + fH_w/2, bZoff + barrierWb],
-            rot: [0, 0, 0]  // face +Z (outer side)
-          },
-          unfolded: {
-            pos: [L/2, baseT, curbW + fH_c + fH_w/2],
-            rot: [-Math.PI/2, 0, 0]
-          }
         }
       ];
+
+      if (hasBarrier) {
+        faces3D.push(
+          {
+            mesh: waMesh,
+            folded: {
+              pos: [L/2, baseT + fH_c + fH_w/2, bZoff],
+              rot: [0, Math.PI, 0]  // face -Z (road side)
+            },
+            unfolded: {
+              pos: [L/2, baseT, -(fH_c + curbW + fH_w/2)],
+              rot: [-Math.PI/2, 0, 0]
+            }
+          },
+          {
+            mesh: wbMesh,
+            folded: {
+              pos: [L/2, baseT + fH_c + fH_w/2, bZoff + barrierWb],
+              rot: [0, 0, 0]  // face +Z (outer side)
+            },
+            unfolded: {
+              pos: [L/2, baseT, curbW + fH_c + fH_w/2],
+              rot: [-Math.PI/2, 0, 0]
+            }
+          }
+        );
+      }
 
       // ---- End faces (妻型枠) ----
       // Curb end: L字断面 → 簡略化して矩形（curbW × fH_c）
@@ -920,18 +989,23 @@
       const endMatCurb = new THREE.MeshLambertMaterial({ color: endColor, side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
       const endMatBarrier = new THREE.MeshLambertMaterial({ color: 0xe8dcc8, side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
 
+      // v8: 台形時の妻面は六角形（前面下部垂直＋傾斜）。RotY(π/2)で local +x → 世界 z=0 側（CA側）
+      const curbEndGeo = () => {
+        if (!isTaper) return new THREE.PlaneGeometry(curbW, fH_c);
+        const sh = new THREE.Shape();
+        sh.moveTo(curbW/2, -fH_c/2);
+        sh.lineTo(curbW/2, -fH_c/2 + frontVert);
+        sh.lineTo(curbW/2 - slantIn, fH_c/2);
+        sh.lineTo(-curbW/2, fH_c/2);
+        sh.lineTo(-curbW/2, -fH_c/2);
+        sh.closePath();
+        return new THREE.ShapeGeometry(sh);
+      };
+
       [0, L].forEach((xPos, idx) => {
-        // 地覆端部（curbW × fH_c）
-        const ceGeo = new THREE.PlaneGeometry(curbW, fH_c);
-        const ceMesh = new THREE.Mesh(ceGeo, endMatCurb.clone());
+        // 地覆端部（curbW × fH_c、台形時は六角形）
+        const ceMesh = new THREE.Mesh(curbEndGeo(), endMatCurb.clone());
         scene.add(ceMesh);
-
-        // 壁高欄端部（barrierWb × fH_w）
-        const beGeo = new THREE.PlaneGeometry(barrierWb, fH_w);
-        const beMesh = new THREE.Mesh(beGeo, endMatBarrier.clone());
-        scene.add(beMesh);
-
-        const endLabel = idx === 0 ? '始端' : '終端';
 
         faces3D.push(
           {
@@ -945,26 +1019,43 @@
               pos: [idx === 0 ? -fH_c/2 - 100 : L + fH_c/2 + 100, baseT, curbW/2],
               rot: [-Math.PI/2, 0, 0]
             }
-          },
-          {
-            mesh: beMesh,
-            folded: {
-              pos: [xPos, baseT + fH_c + fH_w/2, bZoff + barrierWb/2],
-              rot: [0, Math.PI/2, 0]
-            },
-            unfolded: {
-              pos: [idx === 0 ? -fH_w/2 - fH_c - 200 : L + fH_w/2 + fH_c + 200, baseT, bZoff + barrierWb/2],
-              rot: [-Math.PI/2, 0, 0]
-            }
           }
         );
+
+        if (hasBarrier) {
+          // 壁高欄端部（barrierWb × fH_w）
+          const beGeo = new THREE.PlaneGeometry(barrierWb, fH_w);
+          const beMesh = new THREE.Mesh(beGeo, endMatBarrier.clone());
+          scene.add(beMesh);
+
+          faces3D.push(
+            {
+              mesh: beMesh,
+              folded: {
+                pos: [xPos, baseT + fH_c + fH_w/2, bZoff + barrierWb/2],
+                rot: [0, Math.PI/2, 0]
+              },
+              unfolded: {
+                pos: [idx === 0 ? -fH_w/2 - fH_c - 200 : L + fH_w/2 + fH_c + 200, baseT, bZoff + barrierWb/2],
+                rot: [-Math.PI/2, 0, 0]
+              }
+            }
+          );
+        }
       });
 
       // ---- Edge lines for end faces (端部の輪郭線) ----
       const edgeLineMat = new THREE.LineBasicMaterial({ color: 0x8B6914 });
       [0, L].forEach(xPos => {
-        // Curb端部の枠線
-        const cPts = [
+        // Curb端部の枠線（台形時は六角形）
+        const cPts = isTaper ? [
+          new THREE.Vector3(xPos, baseT, 0),
+          new THREE.Vector3(xPos, baseT + frontVert, 0),
+          new THREE.Vector3(xPos, baseT + fH_c, slantIn),
+          new THREE.Vector3(xPos, baseT + fH_c, curbW),
+          new THREE.Vector3(xPos, baseT, curbW),
+          new THREE.Vector3(xPos, baseT, 0),
+        ] : [
           new THREE.Vector3(xPos, baseT, 0),
           new THREE.Vector3(xPos, baseT + fH_c, 0),
           new THREE.Vector3(xPos, baseT + fH_c, curbW),
@@ -974,16 +1065,18 @@
         const cLineGeo = new THREE.BufferGeometry().setFromPoints(cPts);
         scene.add(new THREE.Line(cLineGeo, edgeLineMat));
 
-        // Barrier端部の枠線
-        const bPts = [
-          new THREE.Vector3(xPos, baseT + fH_c, bZoff),
-          new THREE.Vector3(xPos, baseT + fH_c + fH_w, bZoff),
-          new THREE.Vector3(xPos, baseT + fH_c + fH_w, bZoff + barrierWb),
-          new THREE.Vector3(xPos, baseT + fH_c, bZoff + barrierWb),
-          new THREE.Vector3(xPos, baseT + fH_c, bZoff),
-        ];
-        const bLineGeo = new THREE.BufferGeometry().setFromPoints(bPts);
-        scene.add(new THREE.Line(bLineGeo, edgeLineMat));
+        if (hasBarrier) {
+          // Barrier端部の枠線
+          const bPts = [
+            new THREE.Vector3(xPos, baseT + fH_c, bZoff),
+            new THREE.Vector3(xPos, baseT + fH_c + fH_w, bZoff),
+            new THREE.Vector3(xPos, baseT + fH_c + fH_w, bZoff + barrierWb),
+            new THREE.Vector3(xPos, baseT + fH_c, bZoff + barrierWb),
+            new THREE.Vector3(xPos, baseT + fH_c, bZoff),
+          ];
+          const bLineGeo = new THREE.BufferGeometry().setFromPoints(bPts);
+          scene.add(new THREE.Line(bLineGeo, edgeLineMat));
+        }
       });
 
       // Joint boards in 3D (actual size: thickness from JSON)
@@ -1002,11 +1095,13 @@
           scene.add(cjMesh);
 
           // Barrier section joint board (barrierWb × fH_w × jt)
-          const bjGeo = new THREE.BoxGeometry(jt, fH_w, barrierWb);
-          const bjMat = new THREE.MeshLambertMaterial({ color: jointColor, transparent: true, opacity: 0.75 });
-          const bjMesh = new THREE.Mesh(bjGeo, bjMat);
-          bjMesh.position.set(jx, baseT + fH_c + fH_w / 2, bZoff + barrierWb / 2);
-          scene.add(bjMesh);
+          if (hasBarrier) {
+            const bjGeo = new THREE.BoxGeometry(jt, fH_w, barrierWb);
+            const bjMat = new THREE.MeshLambertMaterial({ color: jointColor, transparent: true, opacity: 0.75 });
+            const bjMesh = new THREE.Mesh(bjGeo, bjMat);
+            bjMesh.position.set(jx, baseT + fH_c + fH_w / 2, bZoff + barrierWb / 2);
+            scene.add(bjMesh);
+          }
 
           // Edge highlight lines (red outline around joint)
           const edgeMat = new THREE.LineBasicMaterial({ color: 0xff0000 });
@@ -1020,14 +1115,16 @@
           ];
           scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(cPts), edgeMat));
           // Barrier joint outline
-          const bPts = [
-            new THREE.Vector3(jx, baseT + fH_c, bZoff),
-            new THREE.Vector3(jx, baseT + fH_c + fH_w, bZoff),
-            new THREE.Vector3(jx, baseT + fH_c + fH_w, bZoff + barrierWb),
-            new THREE.Vector3(jx, baseT + fH_c, bZoff + barrierWb),
-            new THREE.Vector3(jx, baseT + fH_c, bZoff),
-          ];
-          scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(bPts), edgeMat));
+          if (hasBarrier) {
+            const bPts = [
+              new THREE.Vector3(jx, baseT + fH_c, bZoff),
+              new THREE.Vector3(jx, baseT + fH_c + fH_w, bZoff),
+              new THREE.Vector3(jx, baseT + fH_c + fH_w, bZoff + barrierWb),
+              new THREE.Vector3(jx, baseT + fH_c, bZoff + barrierWb),
+              new THREE.Vector3(jx, baseT + fH_c, bZoff),
+            ];
+            scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(bPts), edgeMat));
+          }
         });
       }
 
@@ -1040,7 +1137,7 @@
       // Register for animation
       register3DFaces(faces3D);
 
-      // AB markers (triangles on top of barrier)
+      // AB markers (triangles on top of barrier / 地覆単体時は地覆天端)
       if (s.anchor_bolts?.positions) {
         s.anchor_bolts.positions.forEach(ab => {
           const coneGeo = new THREE.ConeGeometry(30, 80, 4);
@@ -1461,4 +1558,5 @@
   };
 
   registerModule('parapet_curb_and_barrier', ParapetModule);
+  registerModule('curb', ParapetModule); // v8: 地覆単体のエイリアス（barrier省略と同義）
 })();

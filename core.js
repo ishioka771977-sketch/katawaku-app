@@ -24,6 +24,7 @@ const TYPE_LABELS = {
   deck_slab: '床版',
   parapet_curb_and_barrier: '地覆・壁高欄',
   parapet: '地覆・壁高欄',
+  curb: '地覆（単体）',
   retaining_wall: '擁壁',
   abutment: '橋台',
   pier: '橋脚',

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 型知(katachi)セットアップmd 追記登録スクリプト。
-既存の最新版 md_content 末尾に katachi_setup_md_addendum_v3.md を追記し、
+既存の最新版 md_content 末尾に katachi_setup_md_addendum_v4.md を追記し、
 smdUploadNewVersion (setup-md.js:103) と同一カラム・同一バージョニングで
 新バージョンとして登録する。RLS(admin限定)を越えるため service_role が必要。
 
@@ -19,11 +19,9 @@ from supabase import create_client
 
 URL = "https://koxovaejdkfkbcygriuu.supabase.co"
 KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
-ADDENDUM_PATH = Path(__file__).parent / "katachi_setup_md_addendum_v3.md"
+ADDENDUM_PATH = Path(__file__).parent / "katachi_setup_md_addendum_v4.md"
 CHANGE_SUMMARY = (
-    "3D対応範囲の早見表を追記（描ける形/描けない形/禁止事項/taper_face記法）。"
-    "背景: 3Dエンジンの台形対応・橋台taper_face・床版3Dビュー追加に伴い、"
-    "くろたんが『描けない形を出力しない』ためのガードを明文化。"
+    "追補v4: 地覆単体（barrier省略）と台形断面（width_top_mm/front_slope_bottom_mm）の書き方を追記（型知v8対応）"
 )
 
 def main():
