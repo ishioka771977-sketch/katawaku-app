@@ -47,10 +47,11 @@ def main():
     next_v = cur["version_number"] + 1
     print(f"[smd] current katachi v{cur['version_number']} ({len(cur['md_content'])}字) -> next v{next_v}")
 
-    # 2) 追記済み本文の組み立て（冪等ガード: 同じ追記が既に入っていたら中止）
-    marker = "【3D対応範囲｜JSONを書く前に必ず確認】"
-    if marker in cur["md_content"]:
-        print("ABORT: 既に追記済みの本文が最新版に含まれている。二重登録を回避して終了。")
+    # 2) 追記済み本文の組み立て（冪等ガード: 今回の追補が既に入っていたら中止）
+    # マーカーは「今回の追補ファイルの見出し」から取る（過去追補の文字列を使うと常にABORTする事故になる）
+    marker = addendum.strip().splitlines()[0].strip()
+    if marker and marker in cur["md_content"]:
+        print(f"ABORT: 今回の追補（{marker}）は既に最新版に含まれている。二重登録を回避して終了。")
         sys.exit(0)
     new_md = cur["md_content"].rstrip() + "\n\n---\n\n" + addendum.strip() + "\n"
 
