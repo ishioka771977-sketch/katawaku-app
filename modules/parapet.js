@@ -81,6 +81,74 @@
       return !!(b && typeof b === 'object' && Object.keys(b).length > 0);
     },
 
+    // 地覆断面の多角形（v9: curb.polygon / structure.polygon。図面座標のまま [x, y]）
+    // x=0 が CA（前面・外面）側。返り値は {pts, w, h}（x最小0・y最小0 に正規化）
+    _curbPolygon(s) {
+      const raw = s.components?.curb?.polygon ?? s.polygon;
+      if (!Array.isArray(raw) || raw.length < 3) return null;
+      const pts = raw.filter(p => Array.isArray(p) && typeof p[0] === 'number' && typeof p[1] === 'number');
+      if (pts.length < 3) return null;
+      const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+      const x0 = Math.min(...xs), y0 = Math.min(...ys);
+      const norm = pts.map(([x, y]) => [x - x0, y - y0]);
+      return { pts: norm, w: Math.max(...xs) - x0, h: Math.max(...ys) - y0 };
+    },
+
+    // 台形/多角形の検証カード（v9・型知流の自動検算）
+    // CA面の型枠高さ＝斜辺長になっているかを検算して⚠を出す
+    validateTaperSection(data) {
+      const s = data.structure;
+      const curb = s.components?.curb || {};
+      const wTop = curb.width_top_mm;
+      const poly = this._curbPolygon(s);
+      if (!wTop && !poly) return '';
+
+      const curbW = poly ? poly.w : (curb.width_mm || 0);
+      const curbH = poly ? poly.h : (curb.height_mm || 0);
+      const slantIn = wTop ? Math.max(0, (curb.width_mm || 0) - wTop) : 0;
+      const frontVert = curb.front_slope_bottom_mm || 0;
+
+      const rows = [];
+      if (slantIn > 0 && curbH > 0) {
+        const slantLen = Math.round(Math.hypot(curbH - frontVert, slantIn));
+        rows.push({ label: '前面(CA)斜辺長', detail: `${slantLen.toLocaleString()}mm（=√((高さ${curbH}−垂直部${frontVert})²+(下幅−上幅=${slantIn})²)）`, ok: true });
+        // CA面の型枠高さとの検算
+        let caH = null;
+        for (const ph of (data.phases || [])) for (const f of (ph.faces || [])) if (f.id === 'CA' && f.height_mm) caH = f.height_mm;
+        if (caH != null) {
+          const diff = Math.abs(caH - slantLen);
+          const okH = diff <= 5 || Math.abs(caH - curbH) <= 5; // 高さそのまま運用も許容（注記）
+          rows.push({
+            label: 'CA面の型枠高さ検算',
+            detail: diff <= 5
+              ? `face高さ ${caH} ≒ 斜辺長 ${slantLen} ✓`
+              : `face高さ ${caH} ≠ 斜辺長 ${slantLen}（差${diff}mm）。台形前面のパネル高さは斜辺長で拾うこと`,
+            ok: okH && diff <= 5,
+          });
+        }
+        if (frontVert > 0) {
+          rows.push({ label: '前面下部垂直部', detail: `${frontVert}mm — 別部材（桟木・カット材）として拾う`, ok: true });
+        }
+      }
+      if (poly) {
+        // 多角形の実面積（靴ひも公式）— 妻面の型枠面積検算用
+        let area2 = 0;
+        for (let i = 0; i < poly.pts.length; i++) {
+          const [x1, y1] = poly.pts[i], [x2, y2] = poly.pts[(i + 1) % poly.pts.length];
+          area2 += x1 * y2 - x2 * y1;
+        }
+        const area = Math.abs(area2) / 2 / 1e6; // m2
+        const rectArea = poly.w * poly.h / 1e6;
+        rows.push({ label: '妻面 実面積', detail: `${area.toFixed(3)}m²（矩形${rectArea.toFixed(3)}m²から${((rectArea - area) * 1e6 / 1e6).toFixed(3)}m²控除）— 妻面型枠はこの実面積で拾う`, ok: true });
+      }
+      if (!rows.length) return '';
+      const allOk = rows.every(r => r.ok);
+      const trs = rows.map(r => `<tr><td>${r.ok ? '✓' : '⚠'}</td><td>${esc(r.label)}</td><td>${esc(r.detail)}</td></tr>`).join('');
+      return `<div class="card"><div class="card-header" style="background:${allOk ? '#eafaf1' : '#fdf2e9'}">` +
+        `台形・多角形断面 検証 — ${allOk ? '<b style="color:#27ae60">整合OK</b>' : '<b style="color:#e67e22">警告あり：パネル高さを確認</b>'}` +
+        `</div><div class="card-body"><table>${trs}</table></div></div>`;
+    },
+
     buildOverview(data) {
       const s = data.structure;
       const curb = s.components?.curb || {};
@@ -112,6 +180,7 @@
       const el = document.getElementById('view-overview');
       el.innerHTML = `
         ${this.validateSkewEnd(data)}
+        ${this.validateTaperSection(data)}
         <div class="card">
           <div class="card-header">全体確認図 — ${esc(s.name||'')}</div>
           <div class="card-body">
@@ -119,7 +188,7 @@
               <div class="info-box">
                 <h4>地覆</h4>
                 <table>
-                  <tr><td>断面形状</td><td>${esc(curb.profile|| (curb.width_top_mm && curb.width_top_mm !== curb.width_mm ? '台形（前面傾斜）' : 'L字型'))}</td></tr>
+                  <tr><td>断面形状</td><td>${esc(curb.profile|| (this._curbPolygon(s) ? '多角形（polygon）' : curb.width_top_mm && curb.width_top_mm !== curb.width_mm ? '台形（前面傾斜）' : 'L字型'))}</td></tr>
                   <tr><td>幅（下端）</td><td>${curb.width_mm||'-'}mm</td></tr>
                   ${curb.width_top_mm ? `<tr><td>幅（上端）</td><td>${curb.width_top_mm}mm</td></tr>` : ''}
                   ${curb.front_slope_bottom_mm ? `<tr><td>前面下部垂直</td><td>${curb.front_slope_bottom_mm}mm</td></tr>` : ''}
@@ -214,9 +283,12 @@
       // Slab
       const slabW = 300, slabH = 16;
 
+      // v9: 多角形断面
+      const poly = this._curbPolygon(s);
+
       // Curb dimensions
-      const cW = (curb.width_mm||350)*sc;
-      const cH = (curb.height_mm||350)*sc;
+      const cW = (poly ? poly.w : (curb.width_mm||350))*sc;
+      const cH = (poly ? poly.h : (curb.height_mm||350))*sc;
       const cBW = (curb.base_width_mm||curb.width_mm||500)*sc;
       const cBH = (curb.base_thickness_mm||0)*sc;
       // 台形（前面傾斜）v8: 上幅と下部垂直
@@ -254,10 +326,14 @@
         svg += `<text x="${curbLeft-5}" y="${curbBaseTop+cBH/2+3}" text-anchor="end" font-size="8" fill="#1a5276">底版 ${curb.base_width_mm||500}×${curb.base_thickness_mm||100}</text>`;
       }
 
-      // Curb upstand（台形時は前面=CA側（左）が傾斜する六角形/台形）
+      // Curb upstand（多角形 > 台形 > 矩形。前面=CA側は左）
       const upstandLeft = cx - cW/2;
       const upstandRight = cx + cW/2;
-      if (isTaper) {
+      if (poly) {
+        const pts = poly.pts.map(([px, py]) => `${upstandLeft + px*sc},${curbBaseTop - py*sc}`).join(' ');
+        svg += `<polygon points="${pts}" fill="#d6eaf8" stroke="#1a5276" stroke-width="1.2"/>`;
+        svg += `<text x="${upstandLeft-5}" y="${curbTop+cH/2+3}" text-anchor="end" font-size="8" fill="#1a5276">地覆 多角形 ${poly.w}×${poly.h}</text>`;
+      } else if (isTaper) {
         const slantX = upstandLeft + (cW - cWt); // 上端の左位置（上幅が狭い分だけ内側へ）
         const vertY = curbBaseTop - cFv;          // 前面下部垂直の上端
         const pts = [
@@ -837,9 +913,11 @@
 
       const L = curb.length_mm || 20000;
       const baseT = curb.base_thickness_mm || 0;
-      const curbW = curb.width_mm || 350;
+      // v9: 多角形断面（curb.polygon）があれば幅・高さは外形から取る
+      const poly = this._curbPolygon(s);
+      const curbW = poly ? poly.w : (curb.width_mm || 350);
       // v8: 面高さは面データ→components の順で実値を使う（旧: 400/1050固定）
-      const fH_c = ff('CA').height_mm || curb.height_mm || 400;
+      const fH_c = poly ? poly.h : (ff('CA').height_mm || curb.height_mm || 400);
       const fH_w = hasBarrier ? (ff('WA').height_mm || barrier.height_mm || 1050) : 0;
       const barrierWb = barrier.width_base_mm || 300;
       const bZoff = (curbW - barrierWb) / 2; // barrier offset from curb edge
@@ -990,7 +1068,17 @@
       const endMatBarrier = new THREE.MeshLambertMaterial({ color: 0xe8dcc8, side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
 
       // v8: 台形時の妻面は六角形（前面下部垂直＋傾斜）。RotY(π/2)で local +x → 世界 z=0 側（CA側）
+      // v9: 多角形（polygon）指定時はその形そのまま（polygon x=0 が CA側 = local +x）
       const curbEndGeo = () => {
+        if (poly) {
+          const sh = new THREE.Shape();
+          poly.pts.forEach(([px, py], i) => {
+            const lx = curbW/2 - px, ly = py - fH_c/2;
+            if (i === 0) sh.moveTo(lx, ly); else sh.lineTo(lx, ly);
+          });
+          sh.closePath();
+          return new THREE.ShapeGeometry(sh);
+        }
         if (!isTaper) return new THREE.PlaneGeometry(curbW, fH_c);
         const sh = new THREE.Shape();
         sh.moveTo(curbW/2, -fH_c/2);
@@ -1047,8 +1135,11 @@
       // ---- Edge lines for end faces (端部の輪郭線) ----
       const edgeLineMat = new THREE.LineBasicMaterial({ color: 0x8B6914 });
       [0, L].forEach(xPos => {
-        // Curb端部の枠線（台形時は六角形）
-        const cPts = isTaper ? [
+        // Curb端部の枠線（多角形 > 台形六角形 > 矩形）
+        const cPts = poly ? [
+          ...poly.pts.map(([px, py]) => new THREE.Vector3(xPos, baseT + py, px)),
+          new THREE.Vector3(xPos, baseT + poly.pts[0][1], poly.pts[0][0]),
+        ] : isTaper ? [
           new THREE.Vector3(xPos, baseT, 0),
           new THREE.Vector3(xPos, baseT + frontVert, 0),
           new THREE.Vector3(xPos, baseT + fH_c, slantIn),

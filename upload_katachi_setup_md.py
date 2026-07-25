@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 型知(katachi)セットアップmd 追記登録スクリプト。
-既存の最新版 md_content 末尾に katachi_setup_md_addendum_v4.md を追記し、
+既存の最新版 md_content 末尾に katachi_setup_md_addendum_v5.md を追記し、
 smdUploadNewVersion (setup-md.js:103) と同一カラム・同一バージョニングで
 新バージョンとして登録する。RLS(admin限定)を越えるため service_role が必要。
 
@@ -18,10 +18,22 @@ from pathlib import Path
 from supabase import create_client
 
 URL = "https://koxovaejdkfkbcygriuu.supabase.co"
-KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
-ADDENDUM_PATH = Path(__file__).parent / "katachi_setup_md_addendum_v4.md"
+def _load_key():
+    k = (os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or "").strip().strip("'\"")
+    if k:
+        return k
+    envf = Path(__file__).parent / ".env.smd"
+    if envf.exists():
+        for line in envf.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line.startswith("SUPABASE_SERVICE_ROLE_KEY="):
+                return line.split("=", 1)[1].strip().strip("'\"")
+    return ""
+
+KEY = _load_key()
+ADDENDUM_PATH = Path(__file__).parent / "katachi_setup_md_addendum_v5.md"
 CHANGE_SUMMARY = (
-    "追補v4: 地覆単体（barrier省略）と台形断面（width_top_mm/front_slope_bottom_mm）の書き方を追記（型知v8対応）"
+    "追補v5: 地覆断面のpolygon指定（多角形・x=0がCA前面側）と台形検証カード（CA斜辺長・妻面実面積の自動検算）"
 )
 
 def main():
