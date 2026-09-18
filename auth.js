@@ -35,21 +35,53 @@ function checkAuth() {
 }
 
 // ログイン処理
+// RLS lockdown（2026-09-16）対応：employees の匿名直接照合は遮断されたため、
+// 鉄知と同じ「認証ハブ集約方式」＝有給ナビの /api/auth/app-login（service key・
+// サーバ側で employees 照合＋端末台数チェック＋端末登録）へ委譲する。
+function getKatachiDeviceId() {
+  try {
+    let id = localStorage.getItem('device_id');
+    if (!id) {
+      id = (crypto && crypto.randomUUID) ? crypto.randomUUID()
+        : 'dev-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+      localStorage.setItem('device_id', id);
+    }
+    return id;
+  } catch { return 'dev-' + Date.now(); }
+}
+function getKatachiDeviceName() {
+  const ua = navigator.userAgent || '';
+  if (/iPhone/i.test(ua)) return 'iPhone';
+  if (/iPad/i.test(ua)) return 'iPad';
+  if (/Android/i.test(ua)) return 'Android端末';
+  if (/Macintosh/i.test(ua)) return 'Mac';
+  if (/Windows/i.test(ua)) return 'Windows PC';
+  return 'その他端末';
+}
+
 async function handleLogin(empNum) {
   const normalized = empNum.toUpperCase().trim();
   if (!normalized) return { error: '社員番号を入力してください' };
 
-  const sb = getSb();
-  if (!sb) return { error: 'データベースに接続できません' };
+  let res, json;
+  try {
+    res = await fetch('https://yukyu-navi.vercel.app/api/auth/app-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        employee_number: normalized,
+        app_id: 'katachi',
+        device_id: getKatachiDeviceId(),
+        device_name: getKatachiDeviceName(),
+      }),
+    });
+    json = await res.json();
+  } catch {
+    return { error: 'ネットワークエラーです。電波の良い場所でもう一度お試しください' };
+  }
+  if (!res.ok) return { error: json && json.error ? json.error : 'ログインに失敗しました' };
 
-  const { data: emp, error: dbErr } = await sb
-    .from('employees')
-    .select('id, employee_number, name, role, is_active')
-    .eq('employee_number', normalized)
-    .single();
-
-  if (dbErr || !emp) return { error: 'この社員番号は登録されていません' };
-  if (!emp.is_active) return { error: 'このアカウントは無効です' };
+  const emp = { employee_number: normalized, name: json.name || '', role: null, id: null };
 
   const empData = JSON.stringify({
     id: emp.id,
