@@ -22,7 +22,8 @@
   const TEXT_KEYWORDS = ['床版', '合成床版', '幅員', '主桁', '底鋼板', '斜角', '数量総括', '特記'];
 
   const state = { files: [], pages: [], params: null, json: null, checks: null, mode: 'standard', busy: false,
-    sessionId: null, questions: [], dialogue: [], lastMeta: {}, lastRefine: null };
+    sessionId: null, questions: [], dialogue: [], lastMeta: {}, lastRefine: null,
+    projects: [], projectId: '', projectName: '', docs: { files: [], fileforce_url: null }, docsMsg: '' };
 
   // ---------- pdf.js ----------
   let _pdfjs = null;
@@ -107,15 +108,15 @@
   function renderStep1() {
     const b = document.getElementById('ddBody');
     b.innerHTML = `
-      <p style="margin-top:0">設計図書のPDF（設計図・数量総括表・特記仕様書）を選ぶと、裏でAIが床版の寸法を読み取り、型知の割付を自動で作ります。<br>
+      <p style="margin-top:0">工事を選ぶと、登録済みの設計図書でそのままAIが読み取ります。未登録なら FileForce からダウンロードして一度登録すれば、次から誰でも「工事を選ぶ」だけです。<br>
       読み取ったあと、AIの質問に答えたり現場の実態・設計変更を書き足すと、精度が現実に近づきます（やり取りは記録され、次の現場に生かされます）。</p>
-      <div class="card"><div class="card-header">① 設計図書を選ぶ</div><div class="card-body">
-        <input type="file" id="ddFiles" accept="application/pdf" multiple style="font-size:14px">
-        <div style="margin-top:8px;color:#666;font-size:12px">複数選択OK。図面PDF（fig）は必ず含めてください。</div>
-        <div id="ddScan" style="margin-top:10px"></div>
+      <div class="card"><div class="card-header">① 工事を選ぶ</div><div class="card-body">
+        <select id="ddProject" style="font-size:14px;max-width:100%"><option value="">読み込み中…</option></select>
+        <div id="ddDocs" style="margin-top:10px;color:#666">工事を選ぶと設計図書の状況が出ます。</div>
       </div></div>
       <div class="card"><div class="card-header">② AIに読ませるページ</div><div class="card-body">
-        <div id="ddPages" style="color:#888">PDFを選ぶと候補ページを自動で選びます（一般図・床版図・断面図）。</div>
+        <div id="ddScan" style="color:#666"></div>
+        <div id="ddPages" style="color:#888">設計図書を読み込むと候補ページを自動で選びます（一般図・床版図・断面図）。</div>
       </div></div>
       <div class="card"><div class="card-header">③ 読み取りモード</div><div class="card-body">
         <label style="margin-right:16px"><input type="radio" name="ddMode" value="standard" ${state.mode === 'standard' ? 'checked' : ''}> 標準（速い・普段はこちら）</label>
@@ -127,9 +128,149 @@
         <span id="ddStatus" style="margin-left:10px;color:#666"></span>
       </div>
       <div class="card" style="margin-top:16px"><div class="card-header">続きから（前に読み取った工事の対話を再開）</div><div class="card-body" id="ddSessions" style="color:#888">読み込み中…</div></div>`;
-    document.getElementById('ddFiles').addEventListener('change', onFiles);
     b.querySelectorAll('input[name=ddMode]').forEach((r) => r.addEventListener('change', (e) => { state.mode = e.target.value; }));
+    document.getElementById('ddProject').addEventListener('change', (e) => selectProject(e.target.value));
+    loadProjects();
     loadSessionList();
+  }
+
+  async function loadProjects() {
+    const sel = document.getElementById('ddProject');
+    try {
+      const res = await fetch('/api/projects', { headers: sessionHeaders() });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      state.projects = data.projects || [];
+      const years = [...new Set(state.projects.map((p) => p.fiscal_year))].sort((a, b) => b - a);
+      sel.innerHTML = `<option value="">— 工事を選ぶ —</option>` + years.map((y) => `<optgroup label="R${y - 2018}年度（${y}）">` +
+        state.projects.filter((p) => p.fiscal_year === y).map((p) => `<option value="${p.id}" ${String(p.id) === String(state.projectId) ? 'selected' : ''}>${escapeHtml(p.project_name)}${p.docs.count ? `　📄${p.docs.count}` : ''}</option>`).join('') + `</optgroup>`).join('') +
+        `<option value="__manual">（一覧にない工事・自分でPDFを選ぶ）</option>`;
+      if (state.projectId) selectProject(state.projectId);
+    } catch (e) {
+      sel.innerHTML = `<option value="">工事一覧を取得できません（${escapeHtml(e.message)}）</option><option value="__manual">自分でPDFを選ぶ</option>`;
+    }
+  }
+
+  async function selectProject(id) {
+    const box = document.getElementById('ddDocs');
+    state.pages = []; state.projectId = id === '__manual' ? '' : id;
+    const p = state.projects.find((x) => String(x.id) === String(id));
+    state.projectName = p ? p.project_name : '';
+    const hint = document.getElementById('ddHint'); if (hint) hint.value = state.projectName;
+    document.getElementById('ddRun').disabled = true;
+    if (!id) { box.innerHTML = '工事を選ぶと設計図書の状況が出ます。'; return; }
+    if (id === '__manual') { box.innerHTML = manualPickerHtml(); bindManualPicker(); return; }
+    box.textContent = '設計図書を確認しています…';
+    try {
+      const res = await fetch('/api/design-docs?project_id=' + encodeURIComponent(id), { headers: sessionHeaders() });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      state.docs = { files: data.files || [], fileforce_url: data.fileforce_url || null };
+      renderDocs();
+    } catch (e) { box.innerHTML = `<span style="color:#c0392b">設計図書の確認に失敗: ${escapeHtml(e.message)}</span>` + manualPickerHtml(); bindManualPicker(); }
+  }
+
+  function manualPickerHtml() {
+    return `<div style="margin-top:8px"><label class="btn btn-warning" style="cursor:pointer">📂 自分でPDFを選ぶ<input type="file" id="ddFiles" accept="application/pdf" multiple style="display:none"></label>
+      <span style="color:#666;font-size:12px;margin-left:8px">複数選択OK。図面PDF（fig）は必ず含めてください。</span></div>`;
+  }
+  function bindManualPicker() { const inp = document.getElementById('ddFiles'); if (inp) inp.addEventListener('change', (e) => loadFiles([...e.target.files])); }
+
+  function renderDocs() {
+    const box = document.getElementById('ddDocs');
+    const d = state.docs;
+    const ff = d.fileforce_url || 'https://app2.fileforce.jp/f/';
+    const list = d.files.length
+      ? `<ul style="margin:6px 0;padding-left:18px">${d.files.map((f) => `<li>${escapeHtml(f.name)} <span style="color:#888;font-size:12px">${f.size ? (f.size / 1024 / 1024).toFixed(1) + 'MB・' : ''}${(f.updated_at || '').slice(0, 10)}</span> <a href="#" onclick="DesignDoc.deleteDoc('${escapeHtml(f.name)}');return false" style="color:#c0392b;font-size:12px;margin-left:6px">削除</a></li>`).join('')}</ul>`
+      : `<div style="color:#e67e22;margin:6px 0">この工事の設計図書はまだ登録されていません。</div>`;
+    box.innerHTML = `
+      <div><b>${escapeHtml(state.projectName)}</b> — 登録済み設計図書 ${d.files.length}件</div>${list}
+      <div class="btn-group" style="margin-top:6px;flex-wrap:wrap">
+        ${d.files.length ? `<button class="btn btn-primary" onclick="DesignDoc.useStoredDocs()">📄 この設計図書で読み取る</button>` : ''}
+        <label class="btn btn-success" style="cursor:pointer">⬆ 設計図書を登録する（PDFを選ぶ）<input type="file" id="ddUpload" accept="application/pdf" multiple style="display:none"></label>
+        <a class="btn" href="${escapeHtml(ff)}" target="_blank" rel="noopener" style="background:#34495e;color:#fff">🗂 FileForceを開く</a>
+        <label class="btn btn-warning" style="cursor:pointer">📂 自分でPDFを選ぶ（登録しない）<input type="file" id="ddFiles" accept="application/pdf" multiple style="display:none"></label>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:#666">FileForceの場所: <input id="ddFfUrl" type="text" value="${escapeHtml(d.fileforce_url || '')}" placeholder="app2.fileforce.jp/f/#folder/… を貼ると次から直接開けます" style="width:60%;font-size:12px"> <button class="btn btn-sm" onclick="DesignDoc.saveFfUrl()">保存</button></div>
+      <div id="ddDocsMsg" style="margin-top:4px;color:#666;font-size:12px">${escapeHtml(state.docsMsg || '')}</div>`;
+    document.getElementById('ddUpload').addEventListener('change', (e) => uploadDocs([...e.target.files]));
+    bindManualPicker();
+  }
+
+  async function uploadDocs(files) {
+    files = files.filter((f) => /\.pdf$/i.test(f.name));
+    if (!files.length || !state.projectId) return;
+    const msg = document.getElementById('ddDocsMsg');
+    try {
+      for (let i = 0; i < files.length; i++) {
+        msg.textContent = `登録中 ${i + 1}/${files.length}: ${files[i].name}`;
+        const r = await fetch('/api/design-docs', { method: 'POST', headers: sessionHeaders(), body: JSON.stringify({ project_id: state.projectId, filename: files[i].name }) });
+        const d = await r.json(); if (!r.ok || !d.ok) throw new Error(d.error || `HTTP ${r.status}`);
+        const put = await fetch(d.signedUrl, { method: 'PUT', headers: { 'Content-Type': 'application/pdf', 'x-upsert': 'true' }, body: files[i] });
+        if (!put.ok) throw new Error(`${files[i].name} の保存に失敗（${put.status}）`);
+      }
+      state.docsMsg = `${files.length}件を登録しました。次からは「この設計図書で読み取る」だけです。`;
+      await selectProject(state.projectId);
+    } catch (e) { msg.textContent = '登録に失敗: ' + e.message; }
+  }
+
+  async function deleteDoc(name) {
+    if (!confirm(`${name} を登録から外しますか？`)) return;
+    try {
+      const r = await fetch('/api/design-docs?project_id=' + encodeURIComponent(state.projectId) + '&name=' + encodeURIComponent(name), { method: 'DELETE', headers: sessionHeaders() });
+      const d = await r.json(); if (!r.ok || !d.ok) throw new Error(d.error || `HTTP ${r.status}`);
+      state.docsMsg = `${name} を外しました。`;
+      await selectProject(state.projectId);
+    } catch (e) { alert('削除に失敗: ' + e.message); }
+  }
+
+  async function saveFfUrl() {
+    const url = (document.getElementById('ddFfUrl') || {}).value || '';
+    try {
+      const r = await fetch('/api/design-docs', { method: 'POST', headers: sessionHeaders(), body: JSON.stringify({ project_id: state.projectId, meta: { fileforce_url: url.trim() } }) });
+      const d = await r.json(); if (!r.ok || !d.ok) throw new Error(d.error || `HTTP ${r.status}`);
+      state.docs.fileforce_url = url.trim(); state.docsMsg = 'FileForceの場所を保存しました。'; renderDocs();
+    } catch (e) { alert('保存に失敗: ' + e.message); }
+  }
+
+  // 登録済み設計図書を取り寄せて pdf.js に渡す
+  async function useStoredDocs() {
+    const scan = document.getElementById('ddScan');
+    const files = [];
+    try {
+      for (let i = 0; i < state.docs.files.length; i++) {
+        const f = state.docs.files[i];
+        scan.textContent = `設計図書を取り寄せ中 ${i + 1}/${state.docs.files.length}: ${f.name}`;
+        const r = await fetch(f.url);
+        if (!r.ok) throw new Error(`${f.name} の取得に失敗（${r.status}）`);
+        files.push(new File([await r.blob()], f.name, { type: 'application/pdf' }));
+      }
+    } catch (e) { scan.textContent = '取り寄せに失敗: ' + e.message; return; }
+    await loadFiles(files);
+  }
+
+  // PDF群 → ページ走査 → 候補ページ自動選択（登録済み／手選択 共通）
+  async function loadFiles(files) {
+    files = files.filter((f) => /\.pdf$/i.test(f.name));
+    if (!files.length) return;
+    const scan = document.getElementById('ddScan');
+    scan.textContent = 'PDFを読んでいます…';
+    state.pages = [];
+    try {
+      for (const f of files) {
+        scan.textContent = `${f.name} を読んでいます…`;
+        const pages = await scanFile(f);
+        state.pages.push(...pages);
+      }
+    } catch (err) {
+      scan.textContent = '読込に失敗: ' + err.message;
+      return;
+    }
+    const cand = autoSelectPages(state.pages);
+    cand.slice(0, MAX_IMAGES).forEach((p) => { p.selected = true; });
+    scan.textContent = `${files.length}ファイル・${state.pages.length}ページ。候補 ${Math.min(cand.length, MAX_IMAGES)} ページを自動選択しました（変更できます）。`;
+    await renderPageList();
+    document.getElementById('ddRun').disabled = false;
   }
 
   async function loadSessionList() {
@@ -171,30 +312,6 @@
       state.lastRefine = null;
       renderStep2();
     } catch (e) { alert('再開に失敗: ' + e.message); }
-  }
-
-  async function onFiles(e) {
-    const files = [...e.target.files].filter((f) => /\.pdf$/i.test(f.name));
-    if (!files.length) return;
-    const scan = document.getElementById('ddScan');
-    scan.textContent = 'PDFを読んでいます…';
-    state.pages = [];
-    try {
-      for (const f of files) {
-        scan.textContent = `${f.name} を読んでいます…`;
-        const pages = await scanFile(f);
-        state.pages.push(...pages);
-      }
-    } catch (err) {
-      scan.textContent = '読込に失敗: ' + err.message;
-      return;
-    }
-    // 自動選択（CAD図面はテキストが化けるので、目次ページの「図面名 番号」から逆引きする）
-    const cand = autoSelectPages(state.pages);
-    cand.slice(0, MAX_IMAGES).forEach((p) => { p.selected = true; });
-    scan.textContent = `${files.length}ファイル・${state.pages.length}ページ。候補 ${Math.min(cand.length, MAX_IMAGES)} ページを自動選択しました（変更できます）。`;
-    await renderPageList();
-    document.getElementById('ddRun').disabled = false;
   }
 
   // 目次ページ（「設計図目次」）の「図面名 図面番号」を読み、図面番号→PDFページに変換する。
@@ -303,7 +420,8 @@
         structure_type: 'deck_slab', mode: state.mode, text, images,
         image_labels: sel.map((p) => `${p.file} p${p.pageNo}`),
         filenames: [...new Set(state.pages.map((p) => p.file))],
-        project_hint: (document.getElementById('ddHint') || {}).value || '',
+        project_hint: (document.getElementById('ddHint') || {}).value || state.projectName || '',
+        project_id: state.projectId || null,
       };
       const res = await fetch('/api/extract', { method: 'POST', headers: sessionHeaders(), body: JSON.stringify(body) });
       const data = await res.json().catch(() => ({}));
@@ -532,7 +650,7 @@
     if (typeof initApp === 'function') initApp(state.json);
   }
 
-  function back() { state.params = null; state.json = null; state.checks = null; state.sessionId = null; state.questions = []; state.dialogue = []; state.lastRefine = null; renderStep1(); }
+  function back() { state.params = null; state.json = null; state.checks = null; state.sessionId = null; state.questions = []; state.dialogue = []; state.lastRefine = null; state.pages = []; renderStep1(); }
 
-  window.DesignDoc = { open, close, run, generate, apply, back, refine, resume, toggleLog };
+  window.DesignDoc = { open, close, run, generate, apply, back, refine, resume, toggleLog, useStoredDocs, deleteDoc, saveFfUrl };
 })();
