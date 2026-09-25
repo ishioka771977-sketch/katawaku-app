@@ -48,7 +48,6 @@ input,select,textarea{font:inherit;padding:4px 6px;border:1px solid #ccc;border-
   <button class="btn btn-primary" onclick="loadAll()">🔄 再読込</button>
   <button class="btn btn-success" onclick="rebuildIndexes()">🗂️ INDEX 再生成</button>
   <button class="btn btn-warning" onclick="openInventoryExport()">📤 棚卸しエクスポート</button>
-  <button class="btn" style="background:#3498db;color:#fff" onclick="openSetupMdUpdate()">📋 セットアップmd更新</button>
   <span id="globalStatus" style="font-size:12px;color:#666;margin-left:10px"></span>
 </div>
 
@@ -69,35 +68,7 @@ input,select,textarea{font:inherit;padding:4px 6px;border:1px solid #ccc;border-
   </div>
 </div>
 
-<!-- セットアップmd更新 モーダル -->
-<div id="smuModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
-  <div style="background:#fff;border-radius:8px;padding:20px;max-width:780px;width:94%;max-height:92vh;overflow:auto">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;border-bottom:1px solid #eee;padding-bottom:8px">
-      <h3 style="font-size:15px;color:#3498db">📋 セットアップmd更新</h3>
-      <button class="btn" style="background:#ccc" onclick="document.getElementById('smuModal').style.display='none'">✕ 閉じる</button>
-    </div>
-    <div style="display:grid;gap:8px">
-      <label style="font-size:12px;color:#666">対象アプリ</label>
-      <select id="smuApp" style="font-size:13px;padding:5px 8px;border:1px solid #ccc;border-radius:3px">
-        <option value="katachi">katachi（型知）</option>
-        <option value="tetchi">tetchi（鉄知）</option>
-      </select>
-
-      <label style="font-size:12px;color:#666">新版md本文（中央くろたんで完成させたもの）</label>
-      <textarea id="smuContent" style="font-family:Consolas,monospace;font-size:11px;height:240px;border:1px solid #ccc;border-radius:3px;padding:8px" placeholder="貼り付け..."></textarea>
-
-      <label style="font-size:12px;color:#666">変更サマリー（NEWバッジで表示される）</label>
-      <textarea id="smuSummary" style="font-size:12px;height:60px;border:1px solid #ccc;border-radius:3px;padding:8px" placeholder="・擁壁の勾配セパ長計算式を追加&#10;・宿野辺橋の現場知見3件を反映"></textarea>
-
-      <label style="font-size:12px;color:#666">統合対象工事（チェック→ integrated に移動）</label>
-      <div id="smuTargets" style="max-height:120px;overflow:auto;border:1px solid #eee;padding:6px;font-size:12px"></div>
-    </div>
-    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px">
-      <button class="btn btn-success" onclick="doSetupMdUpload()">アップロード</button>
-    </div>
-    <div id="smuStatus" style="font-size:12px;color:#666;margin-top:6px"></div>
-  </div>
-</div>
+<!-- セットアップmd更新モーダルは 2026-09-25 退役（設計書→AI抽出→対話に置換） -->
 
 <table id="projTable">
   <thead>
@@ -115,7 +86,7 @@ input,select,textarea{font:inherit;padding:4px 6px;border:1px solid #ccc;border-
   </tbody>
 </table>
 
-<script src="/index-builder.js"></script>
+
 <script>
 const STATUS_LABEL = {
   in_progress: '進行中',
@@ -224,45 +195,6 @@ async function doInventoryExport() {
   a.click();
   setGlobalStatus(`✓ ${ids.length}件をエクスポート`, '#27ae60');
   document.getElementById('invModal').style.display = 'none';
-}
-
-// ─── セットアップmd更新 ───────────────
-async function openSetupMdUpdate() {
-  const projects = await window.pmListProjects({ status: 'completed_pool' });
-  const targets = document.getElementById('smuTargets');
-  if (projects.length === 0) {
-    targets.innerHTML = '<div style="color:#999">統合対象（completed_pool）の工事はありません。空のままアップロードもOK。</div>';
-  } else {
-    targets.innerHTML = projects.map(p => `
-      <label style="display:block;padding:2px 0">
-        <input type="checkbox" class="smu-target" data-pid="${escAttr(p.project_id)}">
-        <code style="font-size:11px">${escHtml(p.project_id)}</code> — ${escHtml(p.project_name)}
-      </label>
-    `).join('');
-  }
-  document.getElementById('smuContent').value = '';
-  document.getElementById('smuSummary').value = '';
-  document.getElementById('smuStatus').textContent = '';
-  document.getElementById('smuModal').style.display = 'flex';
-}
-
-async function doSetupMdUpload() {
-  const app = document.getElementById('smuApp').value;
-  const content = document.getElementById('smuContent').value.trim();
-  const summary = document.getElementById('smuSummary').value.trim();
-  const ids = [...document.querySelectorAll('.smu-target:checked')].map(cb => cb.dataset.pid);
-  const st = document.getElementById('smuStatus');
-  if (!content) { st.textContent = '⚠ md本文が空です'; st.style.color = '#c0392b'; return; }
-  st.textContent = 'アップロード中...'; st.style.color = '#666';
-  try {
-    const rec = await window.smdUploadNewVersion({ app, mdContent: content, changeSummary: summary, integratedProjectIds: ids });
-    st.innerHTML = `✓ v${rec.version_number} アップロード完了 ${ids.length > 0 ? `（${ids.length}件を integrated に移動）` : ''}`;
-    st.style.color = '#27ae60';
-    setTimeout(() => { document.getElementById('smuModal').style.display = 'none'; loadAll(); }, 2000);
-  } catch (e) {
-    st.textContent = '❌ ' + (e.message || e);
-    st.style.color = '#c0392b';
-  }
 }
 
 function escHtml(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
