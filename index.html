@@ -101,10 +101,6 @@ body{font-family:'BIZ UDPGothic','Meiryo',sans-serif;background:#f5f5f5;color:#3
     <div class="subtitle">型枠の知識を知恵として形にする ｜ JSON → 割付図 → PDF/Excel</div>
   </div>
   <div class="btn-group no-print" style="display:flex;align-items:flex-start;flex-wrap:wrap;gap:6px">
-    <div style="display:flex;flex-direction:column;align-items:flex-start;margin-right:6px">
-      <button class="btn" id="btnSmdFetch" style="background:#3498db;color:#fff" onclick="handleSmdFetch()">📋 セットアップmd取得</button>
-      <div id="smdHint" style="font-size:10px;color:#666;margin-top:2px"></div>
-    </div>
     <button class="btn" style="background:#16a085;color:#fff" onclick="prOpenModal()" title="工事を新規登録">🏗️ 工事を登録</button>
     <button class="btn" style="background:#9b59b6;color:#fff" onclick="niOpenModal()">📝 ノート貼り付け</button>
     <button class="btn btn-success" onclick="exportPDF()" id="btnPdf" disabled>PDF出力(A3)</button>
@@ -178,7 +174,6 @@ body{font-family:'BIZ UDPGothic','Meiryo',sans-serif;background:#f5f5f5;color:#3
           </div>
         </div>
 
-        <!-- v3.4 で「📋 セットアップmd取得」（ヘッダー）に統合済み。旧 🐣 くろたん連携カードは削除（2026-04-28） -->
 
         <!-- Sample selector -->
         <div class="card" style="max-width:640px;margin:20px auto 0;text-align:left">
@@ -247,97 +242,33 @@ body{font-family:'BIZ UDPGothic','Meiryo',sans-serif;background:#f5f5f5;color:#3
 <script src="modules/box_culvert.js"></script>
 <script src="modules/retaining_wall.js"></script>
 <script src="modules/foundation.js"></script>
-<!-- knowledge-base.js は v3.4 で setup-md.js に統合（2026-04-28 旧 🐣 くろたん連携を削除） -->
+<!-- セットアップmd（くろたんに貼る運用）は 2026-09-25 に退役。設計書→AI抽出→対話（design-doc.js / api/）に置換 -->
 <script src="project-master.js"></script>
 <script src="project-register.js"></script>
 <script src="index-builder.js"></script>
 <script src="field-note-parser.js"></script>
-<script src="setup-md.js"></script>
 <script src="note-input.js"></script>
 <script src="lib/slab-generator.js"></script>
 <script src="design-doc.js"></script>
 <script>
 renderSavedProjects();
-// セットアップmd取得ボタン
-async function handleSmdFetch() {
-  const btn = document.getElementById('btnSmdFetch');
-  const orig = btn.innerHTML;
-  btn.disabled = true; btn.textContent = '取得中...';
-  try {
-    const r = await window.smdFetchToClipboard('katachi');
-    if (r.ok) {
-      btn.innerHTML = `✓ コピー完了 (v${r.version}, ${r.length.toLocaleString()}字)`;
-      setTimeout(() => { window.smdRenderBadge('btnSmdFetch', 'smdHint', 'katachi'); btn.disabled = false; }, 3000);
-    } else {
-      alert(r.error || '取得失敗');
-      btn.innerHTML = orig; btn.disabled = false;
-    }
-  } catch (e) {
-    alert('取得失敗: ' + e.message);
-    btn.innerHTML = orig; btn.disabled = false;
-  }
-}
-// 認証完了を確実に待ってバッジ初期化 + 完成プール自動移動
+// 完成プールの自動移動（旧セットアップmd初期化から残した処理）
 async function waitForAuth(maxWaitMs) {
   maxWaitMs = maxWaitMs || 10000;
   const start = Date.now();
   while (Date.now() - start < maxWaitMs) {
-    if (window.getSb) return true; // 社員番号ログイン方式のためSupabaseセッション待ちは不要
+    if (window.getSb) return true;
     await new Promise(r => setTimeout(r, 200));
   }
-  console.warn('[smd] auth wait timeout');
   return false;
 }
-// 画面に診断情報を表示する関数
-function smdShowDiagnostic(lines) {
-  const hint = document.getElementById('smdHint');
-  if (!hint) return;
-  hint.innerHTML = `<div style="background:#fff3cd;border:1px solid #f39c12;padding:6px 10px;border-radius:4px;font-size:11px;font-family:Consolas,monospace;color:#333;line-height:1.5">${lines.map(l => l.replace(/</g,'&lt;')).join('<br>')}</div>`;
-}
-
-(async function smdInit() {
-  console.log('[smd] init start, waiting for auth...');
-  smdShowDiagnostic(['[診断] init start...']);
-  const ok = await waitForAuth();
-  const sb = window.getSb?.();
-  const authObj = window.__ishiokaAuth;
-  console.log('[smd] auth wait result:', ok, 'sb:', !!sb, '__ishiokaAuth:', authObj);
-
-  let diagnostic = [
-    `auth wait: ${ok ? 'OK' : 'TIMEOUT'}`,
-    `sb client: ${sb ? 'OK' : 'NG'}`,
-    `__ishiokaAuth: ${authObj ? 'set (' + (authObj.profile?.employee_number || '?') + ')' : 'null'}`,
-  ];
-
-  if (sb) {
-    try {
-      const r = await sb.from('setup_md_versions').select('version_number, created_at').eq('app', 'katachi').order('version_number', { ascending: false });
-      if (r.error) diagnostic.push(`SELECT err: ${r.error.message}`);
-      else diagnostic.push(`SELECT OK: ${r.data?.length || 0}件 (最新v${r.data?.[0]?.version_number || '?'})`);
-    } catch (e) {
-      diagnostic.push(`SELECT throw: ${e.message || e}`);
-    }
-  }
-  smdShowDiagnostic(diagnostic);
-
-  if (window.smdRenderBadge) {
-    try {
-      // 5秒後にバッジ表示に切り替え
-      setTimeout(async () => {
-        try { await window.smdRenderBadge('btnSmdFetch', 'smdHint', 'katachi'); }
-        catch(e) { console.error(e); }
-      }, 5000);
-    } catch (e) {
-      console.error('[smd] renderBadge err', e);
-    }
-  }
+(async function poolInit() {
+  await waitForAuth();
   if (window.fnpAutoMoveCompletedPool) {
     try {
       const r = await window.fnpAutoMoveCompletedPool();
-      if (r.moved > 0) console.log(`[smd] auto-moved ${r.moved} projects to completed_pool`);
-    } catch (e) {
-      console.warn('[smd] autoMove err', e);
-    }
+      if (r.moved > 0) console.log(`[pool] auto-moved ${r.moved} projects to completed_pool`);
+    } catch (e) { console.warn('[pool] autoMove err', e); }
   }
 })();
 </script>
