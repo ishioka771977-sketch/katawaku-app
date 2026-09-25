@@ -149,6 +149,14 @@ body{font-family:'BIZ UDPGothic','Meiryo',sans-serif;background:#f5f5f5;color:#3
         <p>JSONデータを読み込んで、型枠割付図・数量表を表示します。<br>
            構造物タイプはJSONから自動判定されます。</p>
         <div class="card" style="max-width:640px;margin:0 auto;text-align:left">
+          <div class="card-header">設計書から作成</div>
+          <div class="card-body">
+            <p style="margin:0 0 8px;color:#555">設計図書のPDFを選ぶだけで、床版の型枠割付と数量表を自動で作ります（裏でAIが寸法を読み、コードが割付を計算します）。</p>
+            <button class="btn btn-primary" onclick="DesignDoc.open()">📐 設計書から作成（床版）</button>
+          </div>
+        </div>
+
+        <div class="card" style="max-width:640px;margin:20px auto 0;text-align:left">
           <div class="card-header">JSON読込み</div>
           <div class="card-body">
             <textarea class="json-area" id="jsonInput" placeholder="ここにJSONを貼り付け..."></textarea>
@@ -246,6 +254,8 @@ body{font-family:'BIZ UDPGothic','Meiryo',sans-serif;background:#f5f5f5;color:#3
 <script src="field-note-parser.js"></script>
 <script src="setup-md.js"></script>
 <script src="note-input.js"></script>
+<script src="lib/slab-generator.js"></script>
+<script src="design-doc.js"></script>
 <script>
 renderSavedProjects();
 // セットアップmd取得ボタン
