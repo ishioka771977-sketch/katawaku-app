@@ -1,10 +1,12 @@
 // ============================================================
 // 型知 KATACHI — 設計書から作成（design-doc.js）
 // ============================================================
-// 人の操作: ①設計図書PDFを選ぶ → ②AIに読ませる → ③数値を確認 → ④型知に読み込む
+// 人の操作: ①設計図書PDFを選ぶ → ②AIに読ませる → ③数値を確認 → ④AIの質問に答える／補足・設計変更を書く
+//           → ⑤割付を生成して検算 → ⑥型知に読み込む（あとから「続きから」で対話を再開できる）
 // 裏の仕事: pdf.jsでテキスト＋候補ページ画像を作る → /api/extract（登録端末のみ）
-//           → AIが構造パラメータを読む → lib/slab-generator.js が割付を決定的に生成
-//           → 検算（パネル幅合計・セパ本数）→ OKなら型知本体へ
+//           → AIが構造パラメータを読む → /api/refine で代理人と対話して現実に近づける
+//           → lib/slab-generator.js が割付を決定的に生成 → 検算 → 型知本体へ
+//           やり取りは katachi_sessions / katachi_dialogue に記録、知見は次回のAIに載る
 // ============================================================
 (function () {
   'use strict';
@@ -19,7 +21,8 @@
   const PAGE_KEYWORDS = ['一般図', '床版図', '構造一般図', '断面図', '配筋', '標準断面'];
   const TEXT_KEYWORDS = ['床版', '合成床版', '幅員', '主桁', '底鋼板', '斜角', '数量総括', '特記'];
 
-  const state = { files: [], pages: [], params: null, json: null, checks: null, mode: 'standard', busy: false };
+  const state = { files: [], pages: [], params: null, json: null, checks: null, mode: 'standard', busy: false,
+    sessionId: null, questions: [], dialogue: [], lastMeta: {}, lastRefine: null };
 
   // ---------- pdf.js ----------
   let _pdfjs = null;
@@ -104,7 +107,8 @@
   function renderStep1() {
     const b = document.getElementById('ddBody');
     b.innerHTML = `
-      <p style="margin-top:0">設計図書のPDF（設計図・数量総括表・特記仕様書）を選ぶと、裏でAIが床版の寸法を読み取り、型知の割付を自動で作ります。</p>
+      <p style="margin-top:0">設計図書のPDF（設計図・数量総括表・特記仕様書）を選ぶと、裏でAIが床版の寸法を読み取り、型知の割付を自動で作ります。<br>
+      読み取ったあと、AIの質問に答えたり現場の実態・設計変更を書き足すと、精度が現実に近づきます（やり取りは記録され、次の現場に生かされます）。</p>
       <div class="card"><div class="card-header">① 設計図書を選ぶ</div><div class="card-body">
         <input type="file" id="ddFiles" accept="application/pdf" multiple style="font-size:14px">
         <div style="margin-top:8px;color:#666;font-size:12px">複数選択OK。図面PDF（fig）は必ず含めてください。</div>
@@ -121,9 +125,52 @@
       <div class="btn-group" style="margin-top:8px">
         <button class="btn btn-primary" id="ddRun" disabled onclick="DesignDoc.run()">AIに読ませる</button>
         <span id="ddStatus" style="margin-left:10px;color:#666"></span>
-      </div>`;
+      </div>
+      <div class="card" style="margin-top:16px"><div class="card-header">続きから（前に読み取った工事の対話を再開）</div><div class="card-body" id="ddSessions" style="color:#888">読み込み中…</div></div>`;
     document.getElementById('ddFiles').addEventListener('change', onFiles);
     b.querySelectorAll('input[name=ddMode]').forEach((r) => r.addEventListener('change', (e) => { state.mode = e.target.value; }));
+    loadSessionList();
+  }
+
+  async function loadSessionList() {
+    const box = document.getElementById('ddSessions');
+    if (!box) return;
+    try {
+      const res = await fetch('/api/sessions', { headers: sessionHeaders() });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      if (!data.sessions.length) { box.textContent = data.warning ? `記録はまだ使えません（${data.warning}）` : 'まだありません。'; return; }
+      box.innerHTML = data.sessions.map((s) => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #eee">
+          <div><b>${escapeHtml(s.project_name)}</b> <span style="color:#666;font-size:12px">${escapeHtml(s.structure_name || '')}・${escapeHtml(s.employee_number || '')}・対話${s.round_count}回・${(s.updated_at || '').slice(0, 10)}${s.status === 'closed' ? '・完了' : ''}</span></div>
+          <button class="btn btn-sm btn-primary" onclick="DesignDoc.resume('${s.id}')">続きから</button>
+        </div>`).join('');
+    } catch (e) {
+      box.innerHTML = `<span style="color:#999">一覧を取得できません（${escapeHtml(e.message)}）</span>`;
+    }
+  }
+
+  async function resume(id) {
+    const status = document.getElementById('ddSessions');
+    if (status) status.textContent = '読み込み中…';
+    try {
+      const res = await fetch('/api/sessions?id=' + encodeURIComponent(id), { headers: sessionHeaders() });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      const s = data.session;
+      state.sessionId = s.id;
+      state.params = s.params_current || s.params_initial;
+      state.json = s.json_current || null;
+      state.checks = state.json ? SlabGenerator.checkSlabJson(state.json) : null;
+      state.mode = s.mode || 'standard';
+      state.dialogue = data.dialogue || [];
+      // 未回答の質問＝最後のAIの質問群（回答が付いていないもの）
+      const answered = new Set(state.dialogue.filter((d) => d.kind === 'answer' && d.ref_seq).map((d) => d.ref_seq));
+      state.questions = state.dialogue.filter((d) => d.kind === 'question' && !answered.has(d.seq)).map((d) => ({ seq: d.seq, question: d.content }));
+      state.lastMeta = { model: '', resumed: true };
+      state.lastRefine = null;
+      renderStep2();
+    } catch (e) { alert('再開に失敗: ' + e.message); }
   }
 
   async function onFiles(e) {
@@ -262,7 +309,11 @@
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
       state.params = data.params; state.json = data.json; state.checks = data.checks;
-      state.lastMeta = { model: data.model, usage: data.usage, missing: data.missing, gen_error: data.gen_error };
+      state.sessionId = data.session_id || null;
+      state.questions = data.questions || (data.params.questions || []).map((q) => ({ seq: null, question: q }));
+      state.dialogue = [];
+      state.lastRefine = null;
+      state.lastMeta = { model: data.model, usage: data.usage, missing: data.missing, gen_error: data.gen_error, warning: data.warning, lessons_used: data.lessons_used };
       renderStep2();
     } catch (err) {
       status.textContent = '失敗: ' + err.message;
@@ -278,7 +329,9 @@
     ['skew_angle_deg', '斜角 (°)', 'number'], ['skew_direction', '斜角の向き', 'skew'],
     ['haunch_depth_mm', 'ハンチ高 (mm)', 'number'], ['haunch_width_mm', 'ハンチ幅 (mm)', 'number'],
     ['cover_top_mm', '上面かぶり (mm)', 'number'], ['cover_bottom_mm', '下面かぶり (mm)', 'number'],
+    ['scope_end', "妻型枠 A/A'（橋軸方向端部）", 'scope'], ['scope_side', "側型枠 B/B'（張出し端）", 'scope'],
   ];
+  const SCOPE_OPTIONS = [['plywood', 'コンパネで割付する'], ['steel_existing', '鋼製型枠が施工済み（コンパネ不要）'], ['none', '型枠不要']];
 
   function evidenceFor(field) {
     const ev = (state.params && state.params.evidence) || [];
@@ -290,12 +343,14 @@
     const p = state.params;
     const bp = p.base_plate || {};
     const conf = Math.round((p.confidence || 0) * 100);
+    const scope = p.formwork_scope || {};
     const rows = FIELDS.map(([k, label, type]) => {
-      const v = p[k];
+      const v = k === 'scope_end' ? (scope.end_forms || 'plywood') : k === 'scope_side' ? (scope.side_forms || 'plywood') : p[k];
       const ev = evidenceFor(k);
       const evHtml = ev.map((e) => `<div style="color:#666;font-size:11px">根拠: ${escapeHtml(e.source)}（${Math.round((e.confidence || 0) * 100)}%）</div>`).join('');
       let input;
       if (type === 'select') input = `<select data-k="${k}"><option value="composite_steel_deck" ${v === 'composite_steel_deck' ? 'selected' : ''}>合成床版（底鋼板あり）</option><option value="rc_slab" ${v === 'rc_slab' ? 'selected' : ''}>RC床版</option><option value="pc_slab" ${v === 'pc_slab' ? 'selected' : ''}>PC床版</option></select>`;
+      else if (type === 'scope') input = `<select data-k="${k}">${SCOPE_OPTIONS.map(([val, lab]) => `<option value="${val}" ${v === val ? 'selected' : ''}>${lab}</option>`).join('')}</select>`;
       else if (type === 'skew') input = `<select data-k="${k}"><option value="none" ${!v || v === 'none' ? 'selected' : ''}>直橋</option><option value="right" ${v === 'right' ? 'selected' : ''}>right</option><option value="left" ${v === 'left' ? 'selected' : ''}>left</option></select>`;
       else input = `<input data-k="${k}" type="${type}" value="${escapeHtml(v ?? '')}" style="width:${type === 'number' ? '110px' : '95%'}">`;
       const warn = (v == null && type === 'number' && ['width_mm', 'length_mm', 'thickness_mm', 'girder_count', 'girder_spacing_mm'].includes(k)) ? ' <span style="color:#e67e22">⚠ 未読取・入力してください</span>' : '';
@@ -307,25 +362,115 @@
         材質 <input data-k="bp_material" type="text" value="${escapeHtml(bp.material ?? '')}" style="width:120px">
         ${evidenceFor('base_plate').map((e) => `<div style="color:#666;font-size:11px">根拠: ${escapeHtml(e.source)}</div>`).join('')}
       </td></tr>`;
-    const qs = (p.questions || []).map((q) => `<li>${escapeHtml(q)}</li>`).join('');
     const notes = (p.extra_notes || []).map((n) => `<li><b>${escapeHtml(n.category)}</b>: ${escapeHtml(n.content)}</li>`).join('');
+    const meta = state.lastMeta || {};
+    const recNote = state.sessionId ? `<span style="color:#27ae60">記録中</span>` : `<span style="color:#e67e22">未記録（${escapeHtml(meta.warning || 'セッション表が未作成')}）</span>`;
     b.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center">
         <b>④ 読み取り結果を確認（AIの確信度 ${conf}%）</b>
-        <span style="color:#666;font-size:12px">${escapeHtml(state.lastMeta.model || '')}</span>
+        <span style="color:#666;font-size:12px">${escapeHtml(meta.model || '')} ／ 対話 ${recNote}${meta.lessons_used ? `・過去の知見${meta.lessons_used}件を参照` : ''}</span>
       </div>
       <div class="card" style="margin-top:8px"><div class="card-header">構造パラメータ（直せます）</div><div class="card-body">
         <table style="width:100%">${rows}${bpRows}</table>
       </div></div>
-      ${qs ? `<div class="card"><div class="card-header" style="background:#fdf2e9">AIから人への確認事項</div><div class="card-body"><ul style="margin:0;padding-left:18px">${qs}</ul></div></div>` : ''}
+      <div id="ddRefineResult"></div>
+      <div class="card"><div class="card-header" style="background:#fdf2e9">AIから代理人への確認事項 — 答えると精度が現実に近づきます</div><div class="card-body" id="ddQA"></div></div>
       ${notes ? `<div class="card"><div class="card-header">設計書からの申し送り（notesに入ります）</div><div class="card-body"><ul style="margin:0;padding-left:18px">${notes}</ul></div></div>` : ''}
       <div id="ddChecks"></div>
       <div class="btn-group" style="margin-top:8px">
         <button class="btn btn-primary" onclick="DesignDoc.generate()">⑤ 割付を生成して検算</button>
         <button class="btn btn-success" id="ddApply" ${state.json ? '' : 'disabled'} onclick="DesignDoc.apply()">⑥ 型知に読み込む</button>
+        <button class="btn" onclick="DesignDoc.toggleLog()">対話の記録 ${state.dialogue.length ? `(${state.dialogue.length})` : ''}</button>
         <button class="btn" onclick="DesignDoc.back()">← やり直す</button>
-      </div>`;
+      </div>
+      <div id="ddLog" style="display:none"></div>`;
+    renderQA();
     if (state.checks) renderChecks();
+  }
+
+  // 質問への回答＋補足・設計変更の入力欄
+  function renderQA() {
+    const box = document.getElementById('ddQA');
+    if (!box) return;
+    const qs = state.questions || [];
+    const qHtml = qs.length ? qs.map((q, i) => `
+      <div style="margin-bottom:10px">
+        <div><b>Q${i + 1}.</b> ${escapeHtml(q.question)}</div>
+        <textarea data-q="${i}" rows="2" style="width:100%;font-size:13px;margin-top:3px" placeholder="現場の実態を短く（わからなければ空でOK）"></textarea>
+      </div>`).join('') : `<div style="color:#27ae60;margin-bottom:8px">AIからの質問はありません。</div>`;
+    box.innerHTML = `${qHtml}
+      <div style="margin-top:6px"><b>補足（設計書に無い現場の実態・代理人の知っていること）</b>
+        <textarea id="ddRemark" rows="2" style="width:100%;font-size:13px;margin-top:3px" placeholder="例: 端部の鋼製型枠は施工済みなので妻型枠は不要。地覆側の張出は現場合わせ"></textarea></div>
+      <div style="margin-top:6px"><b>設計変更（あれば）</b>
+        <textarea id="ddChange" rows="2" style="width:100%;font-size:13px;margin-top:3px" placeholder="例: 第1回変更で幅員が21,500→21,900に拡幅"></textarea></div>
+      <div class="btn-group" style="margin-top:8px">
+        <button class="btn btn-warning" id="ddRefine" onclick="DesignDoc.refine()">答えてAIに反映する</button>
+        <span id="ddRefineStatus" style="margin-left:10px;color:#666"></span>
+      </div>`;
+  }
+
+  async function refine() {
+    if (state.busy) return;
+    const box = document.getElementById('ddQA');
+    const answers = [...box.querySelectorAll('textarea[data-q]')].map((t) => ({ ...state.questions[Number(t.dataset.q)], answer: t.value.trim() })).filter((a) => a.answer)
+      .map((a) => ({ ref_seq: a.seq, question: a.question, answer: a.answer }));
+    const remark = document.getElementById('ddRemark').value.trim();
+    const change = document.getElementById('ddChange').value.trim();
+    if (!answers.length && !remark && !change) { alert('回答か補足を1つ以上入れてください'); return; }
+    const status = document.getElementById('ddRefineStatus');
+    const btn = document.getElementById('ddRefine');
+    state.busy = true; btn.disabled = true;
+    status.textContent = 'AIが反映しています… 30秒〜1分';
+    try {
+      const res = await fetch('/api/refine', { method: 'POST', headers: sessionHeaders(), body: JSON.stringify({
+        session_id: state.sessionId, mode: state.mode, structure_type: 'deck_slab', params: collectParams(),
+        answers, remarks: remark ? [remark] : [], change_requests: change ? [change] : [],
+      }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      // evidence は初回のものを保持
+      state.params = { ...state.params, ...data.params, evidence: state.params.evidence };
+      state.json = data.json; state.checks = data.checks;
+      state.questions = (data.follow_up_questions || []).map((q) => ({ seq: null, question: q }));
+      // 記録済みなら seq 付きの質問に差し替える
+      if (Array.isArray(data.dialogue) && data.dialogue.length) {
+        state.dialogue = data.dialogue;
+        const lastSummaryIdx = [...data.dialogue].reverse().findIndex((d) => d.kind === 'summary');
+        const afterSeq = lastSummaryIdx >= 0 ? data.dialogue[data.dialogue.length - 1 - lastSummaryIdx].seq : 0;
+        state.questions = data.dialogue.filter((d) => d.kind === 'question' && d.seq > afterSeq).map((d) => ({ seq: d.seq, question: d.content }));
+      }
+      state.lastRefine = data;
+      state.lastMeta = { ...state.lastMeta, model: data.model, warning: data.warning };
+      renderStep2();
+      renderRefineResult();
+    } catch (e) {
+      status.textContent = '失敗: ' + e.message;
+      btn.disabled = false;
+    } finally { state.busy = false; }
+  }
+
+  function renderRefineResult() {
+    const c = document.getElementById('ddRefineResult');
+    const r = state.lastRefine;
+    if (!c || !r) return;
+    const ch = (r.changes || []).length
+      ? `<table style="width:100%">${r.changes.map((x) => `<tr><td style="white-space:nowrap"><b>${escapeHtml(x.field)}</b></td><td>${escapeHtml(x.old_value)} → <b>${escapeHtml(x.new_value)}</b></td><td style="color:#666">${escapeHtml(x.reason)}</td></tr>`).join('')}</table>`
+      : `<div style="color:#666">パラメータの変更はありません。</div>`;
+    const ls = (r.lessons || []).length ? `<div style="margin-top:6px;color:#2c3e50"><b>次の現場に残す知見（${r.lessons_saved || 0}件記録）</b><ul style="margin:2px 0 0;padding-left:18px">${r.lessons.map((l) => `<li>[${escapeHtml(l.category)}] ${escapeHtml(l.title)}: ${escapeHtml(l.content)}</li>`).join('')}</ul></div>` : '';
+    c.innerHTML = `<div class="card"><div class="card-header" style="background:#eaf2fb">AIの反映結果（${r.round ? `対話${r.round}回目` : '未記録'}）</div><div class="card-body">
+      <div style="margin-bottom:6px">${escapeHtml(r.summary || '')}</div>${ch}${ls}
+      ${r.warning ? `<div style="color:#e67e22;font-size:12px;margin-top:4px">⚠ ${escapeHtml(r.warning)}</div>` : ''}
+    </div></div>`;
+  }
+
+  function toggleLog() {
+    const box = document.getElementById('ddLog');
+    if (!box) return;
+    if (box.style.display === 'none') {
+      const rows = state.dialogue.length ? state.dialogue.map((d) => `<tr><td style="white-space:nowrap;color:#888">${d.seq}</td><td style="white-space:nowrap">${d.role === 'ai' ? '🤖 AI' : '👷 代理人'}<br><span style="font-size:11px;color:#888">${escapeHtml(d.kind)}</span></td><td style="white-space:pre-wrap">${escapeHtml(d.content)}</td></tr>`).join('') : '<tr><td colspan="3" style="color:#888">記録はまだありません（セッション表が未作成か、対話がまだです）</td></tr>';
+      box.innerHTML = `<div class="card" style="margin-top:8px"><div class="card-header">対話の記録（この工事）</div><div class="card-body"><table style="width:100%;font-size:12px">${rows}</table></div></div>`;
+      box.style.display = 'block';
+    } else box.style.display = 'none';
   }
 
   function collectParams() {
@@ -333,9 +478,7 @@
     const p = { ...state.params };
     b.querySelectorAll('[data-k]').forEach((inp) => {
       const k = inp.dataset.k;
-      if (k === 'bp_exists') return;
-      if (k === 'bp_thickness') return;
-      if (k === 'bp_material') return;
+      if (k === 'bp_exists' || k === 'bp_thickness' || k === 'bp_material' || k === 'scope_end' || k === 'scope_side') return;
       if (inp.type === 'number') p[k] = inp.value === '' ? null : Number(inp.value);
       else p[k] = inp.value;
     });
@@ -344,7 +487,8 @@
       thickness_mm: b.querySelector('[data-k=bp_thickness]').value === '' ? null : Number(b.querySelector('[data-k=bp_thickness]').value),
       material: b.querySelector('[data-k=bp_material]').value || null,
     };
-    if (p.skew_direction === 'none') p.skew_direction = null;
+    if (!p.skew_direction) p.skew_direction = 'none';
+    p.formwork_scope = { end_forms: b.querySelector('[data-k=scope_end]').value, side_forms: b.querySelector('[data-k=scope_side]').value };
     return p;
   }
 
@@ -355,7 +499,7 @@
     try {
       const u = (typeof getLoggedInUser === 'function') ? getLoggedInUser() : null;
       state.json = SlabGenerator.generateSlabJson({
-        ...p,
+        ...p, skew_direction: p.skew_direction === 'none' ? null : p.skew_direction,
         created_by: `型知（設計書抽出・${(u && u.name) || (u && u.employee_number) || '不明'}）`,
         source_refs: [...new Set(state.pages.map((x) => x.file))].map((f) => `設計図書: ${f}`),
       });
@@ -376,15 +520,19 @@
       <div class="card-body"><table>${trs}</table></div></div>`;
   }
 
-  function apply() {
+  async function apply() {
     if (!state.json) return;
     const ta = document.getElementById('jsonInput');
     if (ta) ta.value = JSON.stringify(state.json, null, 2);
+    // 型知に読み込んだ最終JSONをセッションに保存（失敗しても進める）
+    if (state.sessionId) {
+      fetch('/api/sessions', { method: 'POST', headers: sessionHeaders(), body: JSON.stringify({ id: state.sessionId, json: state.json, params: state.params }) }).catch(() => {});
+    }
     close();
     if (typeof initApp === 'function') initApp(state.json);
   }
 
-  function back() { state.params = null; state.json = null; state.checks = null; renderStep1(); }
+  function back() { state.params = null; state.json = null; state.checks = null; state.sessionId = null; state.questions = []; state.dialogue = []; state.lastRefine = null; renderStep1(); }
 
-  window.DesignDoc = { open, close, run, generate, apply, back };
+  window.DesignDoc = { open, close, run, generate, apply, back, refine, resume, toggleLog };
 })();
