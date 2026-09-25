@@ -7,7 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/config.js"></script>
 <script src="/auth.js"></script>
-<script>(async () => { await authGuard(); })();</script>
+<!-- 認証は auth.js が DOMContentLoaded で自動実行（checkAuth） -->
 <script src="/project-master.js"></script>
 <script src="/setup-md.js"></script>
 <script src="/index-builder.js"></script>

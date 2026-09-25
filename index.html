@@ -7,11 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/config.js"></script>
 <script src="/auth.js"></script>
-<script>
-// 認証チェック: 未ログインならlogin.htmlへリダイレクト
-(async () => { await authGuard(); })();
-</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
@@ -113,7 +109,7 @@ body{font-family:'BIZ UDPGothic','Meiryo',sans-serif;background:#f5f5f5;color:#3
     <button class="btn" style="background:#9b59b6;color:#fff" onclick="niOpenModal()">📝 ノート貼り付け</button>
     <button class="btn btn-success" onclick="exportPDF()" id="btnPdf" disabled>PDF出力(A3)</button>
     <button class="btn btn-warning" onclick="exportExcel()" id="btnExcel" disabled>Excel出力</button>
-    <button class="btn" style="background:#e74c3c;color:#fff;margin-left:12px" onclick="authLogout().then(()=>location.href='/login.html')">ログアウト</button>
+    <button class="btn" style="background:#e74c3c;color:#fff;margin-left:12px" onclick="handleLogout()">ログアウト</button>
   </div>
 </header>
 
@@ -276,11 +272,7 @@ async function waitForAuth(maxWaitMs) {
   maxWaitMs = maxWaitMs || 10000;
   const start = Date.now();
   while (Date.now() - start < maxWaitMs) {
-    if (window.__ishiokaAuth && window.getSb) {
-      // Supabase セッションのセット完了を少し待つ
-      await new Promise(r => setTimeout(r, 300));
-      return true;
-    }
+    if (window.getSb) return true; // 社員番号ログイン方式のためSupabaseセッション待ちは不要
     await new Promise(r => setTimeout(r, 200));
   }
   console.warn('[smd] auth wait timeout');

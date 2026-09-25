@@ -65,7 +65,7 @@ async function handleLogin(empNum) {
 
   let res, json;
   try {
-    res = await fetch('https://yukyu-navi.vercel.app/api/auth/app-login', {
+    res = await fetch(`${window.ISHIOKA_AUTH_API_BASE || 'https://yukyu-navi.vercel.app'}/api/auth/app-login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
