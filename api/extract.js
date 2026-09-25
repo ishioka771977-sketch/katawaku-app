@@ -4,6 +4,8 @@
 // 役割: 設計図書（テキスト＋ページ画像）から床版の構造パラメータをAIで読み取り、
 //       lib/slab-generator.js で型知JSONを決定的に生成し、検算結果と一緒に返す。
 //       AIは「数値を読む」だけ。割付・数量はコードが計算する。
+//       読取りは katachi_sessions に記録し、AIの確認事項は対話の最初の質問として残す
+//       （続きは api/refine.js で代理人と対話）。過去の知見（katachi_lessons）はプロンプトに載る。
 //
 // POST /api/extract
 //   headers: x-employee-number, x-device-id（型知にログイン済みの登録端末のみ）
@@ -15,38 +17,16 @@
 //     filenames: ['fig01.pdf', ...],
 //     project_hint: '宿野辺橋 床版工事'        // 任意
 //   }
-//   → { params, evidence, questions, json, checks, model, usage }
+//   → { params, questions(seq付き), json, checks, session_id, model, usage }
 //
 // 環境変数（Vercel）: ANTHROPIC_API_KEY / SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY
 // ============================================================
-const fs = require('fs');
-const path = require('path');
-const Anthropic = require('@anthropic-ai/sdk');
-const { createClient } = require('@supabase/supabase-js');
+const S = require('./_lib/store');
 const SlabGenerator = require('../lib/slab-generator');
 
-const MODELS = {
-  standard: 'claude-opus-5-5',
-  precise: 'claude-fable-5-1',
-};
 const MAX_IMAGES = 12;
 const MAX_TOTAL_BASE64 = 5_000_000;
 const MAX_TEXT = 200_000;
-
-// ---------- 知識（Git管理・起動時に1回読む・プロンプトキャッシュに載せる） ----------
-let _knowledge = null;
-function loadKnowledge() {
-  if (_knowledge) return _knowledge;
-  const dir = path.join(process.cwd(), 'knowledge');
-  const files = ['katachi_setup_v9.md', '05_slab_knowhow.md', '02_correct_procedure.md', '08_veteran_glossary.md'];
-  const parts = [];
-  for (const f of files) {
-    try { parts.push(`\n\n===== ${f} =====\n` + fs.readFileSync(path.join(dir, f), 'utf8')); }
-    catch (e) { parts.push(`\n\n===== ${f} (読込失敗: ${e.message}) =====`); }
-  }
-  _knowledge = parts.join('');
-  return _knowledge;
-}
 
 // ---------- 抽出スキーマ（structured output） ----------
 const SLAB_SCHEMA = {
@@ -54,7 +34,7 @@ const SLAB_SCHEMA = {
   additionalProperties: false,
   required: ['project_name', 'structure_name', 'subtype', 'width_mm', 'length_mm', 'thickness_mm',
     'girder_count', 'girder_spacing_mm', 'base_plate', 'skew_angle_deg', 'skew_direction',
-    'haunch_depth_mm', 'haunch_width_mm', 'cover_top_mm', 'cover_bottom_mm',
+    'haunch_depth_mm', 'haunch_width_mm', 'cover_top_mm', 'cover_bottom_mm', 'formwork_scope',
     'evidence', 'questions', 'extra_notes', 'confidence'],
   properties: {
     project_name: { type: 'string', description: '工事名（設計書の表紙どおり）' },
@@ -79,6 +59,14 @@ const SLAB_SCHEMA = {
     haunch_width_mm: { type: ['number', 'null'], description: 'ハンチ幅mm（不明ならnull）' },
     cover_top_mm: { type: ['number', 'null'], description: '上面かぶりmm（不明ならnull）' },
     cover_bottom_mm: { type: ['number', 'null'], description: '下面かぶりmm（不明ならnull）' },
+    formwork_scope: {
+      type: 'object', additionalProperties: false, required: ['end_forms', 'side_forms'],
+      description: '型枠範囲。plywood=コンパネ割付が必要／steel_existing=鋼製型枠が上部工等で施工済み（コンパネ不要）／none=不要',
+      properties: {
+        end_forms: { type: 'string', enum: ['plywood', 'steel_existing', 'none'], description: "妻型枠（A/A'・橋軸方向端部）" },
+        side_forms: { type: 'string', enum: ['plywood', 'steel_existing', 'none'], description: "側型枠（B/B'・張出し端）" },
+      },
+    },
     evidence: {
       type: 'array', description: '各数値の根拠（どの図面・どの記載から読んだか）',
       items: {
@@ -90,7 +78,7 @@ const SLAB_SCHEMA = {
         },
       },
     },
-    questions: { type: 'array', items: { type: 'string' }, description: '設計書から読めず人に確認が必要な事項' },
+    questions: { type: 'array', items: { type: 'string' }, description: '設計書から読めず人（現場代理人）に確認が必要な事項。型枠計画に効くことだけ' },
     extra_notes: {
       type: 'array', description: '型枠計画に効く固有事項（拡幅・変断面・不等間隔主桁・打継ぎ指定など）',
       items: { type: 'object', additionalProperties: false, required: ['category', 'content'], properties: { category: { type: 'string' }, content: { type: 'string' } } },
@@ -101,6 +89,7 @@ const SLAB_SCHEMA = {
 
 const SYSTEM_PROMPT = `あなたは石岡組の型枠工事計画の補佐AI「型知」の抽出エンジンです。
 設計図書（一般図・床版図・数量総括表・特記仕様書）から、床版型枠の割付に必要な構造パラメータを読み取ります。
+このあと現場代理人と対話して精度を現実に近づけるので、読めないことは推測せず questions に残してください。
 
 必ず守ること:
 1. 図面に書かれている数値だけを使う。推測で埋めない。読めない項目は null にして questions に書く。
@@ -109,57 +98,27 @@ const SYSTEM_PROMPT = `あなたは石岡組の型枠工事計画の補佐AI「�
 4. 床版長は「床版コンクリートの橋軸方向長さ」。桁長・支間長・橋長と区別する。
 5. 主桁本数はG-1〜G-nのラベルの数。間隔は断面図の寸法線から。不等間隔なら代表値＋extra_notesに実配列。
 6. 底鋼板（SM490等の鋼板が床版下面に一体）があれば合成床版。RC床版なら base_plate.exists=false。
-7. 斜角は平面図の支承線と橋軸のなす角。直橋（90°）なら skew_angle_deg=90、skew_direction=null。
+7. 斜角は平面図の支承線と橋軸のなす角。直橋（90°）なら skew_angle_deg=90、skew_direction='none'。
 8. 単位はすべて mm。図面が m 表記なら換算する。
 9. 割付・数量は計算しない（コードが計算する）。パラメータの読み取りに集中する。
+10. 型枠範囲（formwork_scope）: 図面に「鋼製型枠」「施工済」など外周型枠が既にある根拠があれば steel_existing、無ければ plywood。迷ったら plywood にして questions で確認する。ハンチが図面に無ければ haunch_depth_mm=0。
+11. 過去の現場の知見（あれば末尾に載る）に該当する条件があれば、questions か extra_notes で必ず触れる。
 
 以下は型知の知識ベース（JSON仕様と現場知見）。パラメータの意味を確認するために参照すること。`;
-
-// ---------- 端末認証（登録端末のみAPIを使える） ----------
-async function verifyDevice(req) {
-  const emp = String(req.headers['x-employee-number'] || '').trim().toUpperCase();
-  const dev = String(req.headers['x-device-id'] || '').trim();
-  if (!emp || !dev) return { ok: false, status: 401, error: 'ログインしてください（型知の登録端末のみ使えます）' };
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) return { ok: false, status: 500, error: 'サーバ設定不足（SUPABASE）' };
-  const sb = createClient(url, key, { auth: { persistSession: false } });
-  const { data, error } = await sb
-    .from('user_devices')
-    .select('id')
-    .eq('employee_number', emp)
-    .eq('app_id', 'katachi')
-    .eq('device_id', dev)
-    .eq('is_active', true)
-    .limit(1);
-  if (error) return { ok: false, status: 500, error: '端末確認に失敗: ' + error.message };
-  if (!data || !data.length) return { ok: false, status: 403, error: 'この端末は型知に登録されていません。ログインし直してください' };
-  return { ok: true, employee_number: emp };
-}
-
-function readJsonBody(req) {
-  return new Promise((resolve, reject) => {
-    if (req.body && typeof req.body === 'object') return resolve(req.body);
-    let raw = '';
-    req.on('data', (c) => { raw += c; });
-    req.on('end', () => { try { resolve(raw ? JSON.parse(raw) : {}); } catch (e) { reject(e); } });
-    req.on('error', reject);
-  });
-}
 
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
   try {
-    const auth = await verifyDevice(req);
+    const auth = await S.verifyDevice(req);
     if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
 
-    const body = await readJsonBody(req);
+    const body = await S.readJsonBody(req);
     const structureType = body.structure_type || 'deck_slab';
     if (structureType !== 'deck_slab') return res.status(400).json({ error: `未対応の構造物: ${structureType}（v1は床版のみ）` });
     const mode = body.mode === 'precise' ? 'precise' : 'standard';
-    const model = MODELS[mode];
+    const model = S.MODELS[mode];
 
     const text = typeof body.text === 'string' ? body.text.slice(0, MAX_TEXT) : '';
     const images = Array.isArray(body.images) ? body.images.filter((s) => typeof s === 'string' && s) : [];
@@ -168,33 +127,27 @@ module.exports = async (req, res) => {
     if (total > MAX_TOTAL_BASE64) return res.status(400).json({ error: '画像データが大きすぎます（ページ数を減らすか解像度を下げてください）' });
     if (!text && !images.length) return res.status(400).json({ error: '設計書のテキストかページ画像が必要です' });
 
-    if (!process.env.ANTHROPIC_API_KEY) return res.status(500).json({ error: 'サーバ設定不足（ANTHROPIC_API_KEY）' });
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
     const content = [];
     images.forEach((b64, i) => {
       content.push({ type: 'text', text: `【ページ画像 ${i + 1}/${images.length}】${(body.image_labels || [])[i] || ''}` });
       content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } });
     });
     if (text) content.push({ type: 'text', text: `【設計図書テキスト（pdf.js抽出・CAD図面は文字化けあり。図面は画像を優先）】\nファイル: ${(body.filenames || []).join(', ')}\n\n${text}` });
-    content.push({
-      type: 'text',
-      text: `工事の手がかり: ${body.project_hint || '（なし）'}\n\n上記から床版型枠の構造パラメータを読み取り、スキーマどおりに出力してください。`,
-    });
+    content.push({ type: 'text', text: `工事の手がかり: ${body.project_hint || '（なし）'}\n\n上記から床版型枠の構造パラメータを読み取り、スキーマどおりに出力してください。` });
 
-    const request = {
+    const lessons = await S.loadLessons(structureType);
+    const response = await S.anthropic().messages.create({
       model,
       max_tokens: 16000,
       thinking: { type: 'adaptive' },
       output_config: { effort: mode === 'precise' ? 'high' : 'medium', format: { type: 'json_schema', schema: SLAB_SCHEMA } },
       system: [
         { type: 'text', text: SYSTEM_PROMPT },
-        { type: 'text', text: loadKnowledge(), cache_control: { type: 'ephemeral' } },
+        { type: 'text', text: S.loadKnowledge(), cache_control: { type: 'ephemeral' } },
+        ...(lessons.text ? [{ type: 'text', text: lessons.text }] : []),
       ],
       messages: [{ role: 'user', content }],
-    };
-
-    const response = await client.messages.create(request);
+    });
     if (response.stop_reason === 'refusal') return res.status(502).json({ error: 'AIが応答を拒否しました。設計書の内容を確認してください' });
     const textBlock = response.content.find((b) => b.type === 'text');
     if (!textBlock) return res.status(502).json({ error: 'AIの応答が空でした', stop_reason: response.stop_reason });
@@ -216,16 +169,30 @@ module.exports = async (req, res) => {
       } catch (e) { genError = e.message; }
     }
 
+    // セッション記録（テーブル未作成なら warning を返して続行）
+    const created = await S.createSession({
+      project_name: params.project_name || body.project_hint || '無名工事',
+      structure_type: structureType, structure_name: params.structure_name || null,
+      employee_number: auth.employee_number, mode, source_files: body.filenames || [],
+      params_initial: params, params_current: params, json_current: json,
+    });
+    let questions = (params.questions || []).map((q) => ({ seq: null, question: q }));
+    let warning = created.warning || null;
+    if (created.id) {
+      try {
+        const r = await S.appendDialogue(created.id, [
+          { role: 'ai', kind: 'summary', content: `設計書から読取り（${mode}・確信度${Math.round((params.confidence || 0) * 100)}%）: 幅員${params.width_mm} 床版長${params.length_mm} 版厚${params.thickness_mm} 主桁${params.girder_count}@${params.girder_spacing_mm} 斜角${params.skew_angle_deg}` },
+          ...(params.questions || []).map((q) => ({ role: 'ai', kind: 'question', content: q })),
+        ], 'AI');
+        const qRows = r.rows.filter((x) => x.kind === 'question');
+        questions = qRows.map((x) => ({ seq: x.seq, question: x.content }));
+      } catch (e) { warning = e.message; }
+    }
+
     return res.status(200).json({
-      ok: true,
-      model: response.model,
-      mode,
-      params,
-      missing,
-      json,
-      checks,
-      gen_error: genError,
-      usage: response.usage,
+      ok: true, model: response.model, mode, session_id: created.id || null,
+      params, questions, missing, json, checks, gen_error: genError,
+      lessons_used: lessons.count, warning, usage: response.usage,
     });
   } catch (e) {
     const status = e && e.status ? e.status : 500;
