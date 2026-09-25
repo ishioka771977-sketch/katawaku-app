@@ -9,3 +9,4 @@ node_modules/
 # env files
 .env*
 .env.smd
+_test/
