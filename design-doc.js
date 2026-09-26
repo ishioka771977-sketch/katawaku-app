@@ -209,7 +209,7 @@
     const d = state.docs;
     const ff = d.fileforce_url || 'https://app2.fileforce.jp/f/';
     const list = d.files.length
-      ? `<ul style="margin:6px 0;padding-left:18px">${d.files.map((f) => `<li>${escapeHtml(f.name)} <span style="color:#888;font-size:12px">${f.size ? (f.size / 1024 / 1024).toFixed(1) + 'MB・' : ''}${(f.updated_at || '').slice(0, 10)}</span> <a href="#" onclick="DesignDoc.deleteDoc('${escapeHtml(f.name)}');return false" style="color:#c0392b;font-size:12px;margin-left:6px">削除</a></li>`).join('')}</ul>`
+      ? `<ul style="margin:6px 0;padding-left:18px">${d.files.map((f) => `<li>${escapeHtml(f.name)} <span style="color:#888;font-size:12px">${f.size ? (f.size / 1024 / 1024).toFixed(1) + 'MB・' : ''}${(f.updated_at || '').slice(0, 10)}</span> <a href="#" onclick="DesignDoc.deleteDoc('${escapeHtml(f.stored || f.name)}');return false" style="color:#c0392b;font-size:12px;margin-left:6px">削除</a></li>`).join('')}</ul>`
       : `<div style="color:#e67e22;margin:6px 0">この工事の設計図書はまだ登録されていません。</div>`;
     box.innerHTML = `
       <div><b>${escapeHtml(state.projectName)}</b> — 登録済み設計図書 ${d.files.length}件</div>${list}

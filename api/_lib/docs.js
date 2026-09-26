@@ -56,26 +56,41 @@ async function listDocs(projectId) {
     const { data: s, error: se } = await sb().storage.from(BUCKET).createSignedUrl(path, SIGN_TTL);
     out.push({ name: f.name, path, size: f.metadata?.size ?? null, updated_at: f.updated_at, url: se ? null : s.signedUrl });
   }
-  // FileForce のフォルダURL（登録者が残したメモ）
-  let fileforce_url = null;
-  try {
-    const { data: meta } = await sb().storage.from(BUCKET).download(`${projectId}/_meta.json`);
-    if (meta) fileforce_url = JSON.parse(await meta.text()).fileforce_url || null;
-  } catch { /* なし */ }
-  return { files: out, fileforce_url };
+  // 表示名（日本語名は _meta.json の names に元の名前がある）と FileForce のフォルダURL
+  const meta = await readMeta(projectId);
+  const names = meta.names || {};
+  for (const f of out) { f.stored = f.name; f.name = names[f.name] || f.name; }
+  return { files: out, fileforce_url: meta.fileforce_url || null };
 }
 
+// Storage のキーは ASCII しか通らない（日本語名は InvalidKey）。日本語名は短いハッシュ＋ASCII部分に置き換え、
+// 元の名前は _meta.json の names に残して一覧で表示する
+function storedName(filename) {
+  const base = String(filename).replace(/[\\/]/g, '_').trim();
+  if (/^[\w.\-()]+$/.test(base)) return base;
+  const ext = (base.match(/\.[A-Za-z0-9]+$/) || ['.pdf'])[0].toLowerCase();
+  const ascii = base.slice(0, -ext.length).replace(/[^\w\-]/g, '').slice(0, 24);
+  let h = 0; for (const ch of base) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return `d_${h.toString(16).padStart(8, '0')}${ascii ? '_' + ascii : ''}${ext}`;
+}
+async function readMeta(projectId) {
+  try { const { data } = await sb().storage.from(BUCKET).download(`${projectId}/_meta.json`); if (data) return JSON.parse(await data.text()); } catch (e) { /* なし */ }
+  return {};
+}
 async function signedUpload(projectId, filename) {
-  const safe = String(filename).replace(/[\\/]/g, '_');
+  const original = String(filename).replace(/[\\/]/g, '_').trim();
+  const safe = storedName(original);
   const path = `${projectId}/${safe}`;
+  if (safe !== original) { const meta = await readMeta(projectId); meta.names = { ...(meta.names || {}), [safe]: original }; await saveMeta(projectId, meta); }
   // 既存があれば上書き（署名付きアップロードは upsert 不可のため先に消す）
   await sb().storage.from(BUCKET).remove([path]).catch(() => {});
   const { data, error } = await sb().storage.from(BUCKET).createSignedUploadUrl(path);
   if (error) throw new Error('アップロードURLの発行に失敗: ' + error.message);
-  return { path, token: data.token, signedUrl: data.signedUrl };
+  return { path, token: data.token, signedUrl: data.signedUrl, stored_name: safe, display_name: original };
 }
 
 async function saveMeta(projectId, meta) {
+  if (!meta.names) { const cur = await readMeta(projectId); if (cur.names) meta = { ...meta, names: cur.names }; }
   const blob = Buffer.from(JSON.stringify(meta), 'utf8');
   const { error } = await sb().storage.from(BUCKET).upload(`${projectId}/_meta.json`, blob, { contentType: 'application/json', upsert: true });
   if (error) throw new Error('メモの保存に失敗: ' + error.message);
