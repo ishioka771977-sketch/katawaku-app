@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><title>型知 取り込み窓口</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{font:14px/1.7 -apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",Meiryo,sans-serif;margin:0;padding:18px;color:#222;background:#f7f9fb}h1{font-size:16px;margin:0 0 8px}.ok{color:#27ae60}.ng{color:#c0392b}#log{font-size:12px;color:#666;white-space:pre-wrap;margin-top:10px}</style>
+</head><body>
+<h1>📐 型知 取り込み窓口</h1>
+<div id="who">確認中…</div>
+<div style="font-size:12px;color:#666;margin-top:6px">FileForce の画面で取り込みが終わるまで、この窓は閉じないでください（終わると自動で閉じます）。</div>
+<div id="log"></div>
+<script>
+// FileForce の画面（ff-import.js）から postMessage で依頼を受け、型知の端末認証で /api を叩く小窓。
+// 別サイトの iframe だと localStorage が分離されるため、ポップアップ（トップレベル）で開く。
+(function () {
+  var ALLOWED = 'https://app2.fileforce.jp';
+  function creds() {
+    var emp = '';
+    try { var u = JSON.parse(localStorage.getItem('yukyu_employee') || 'null'); emp = (u && (u.employee_number || u.employeeNumber)) || ''; } catch (e) {}
+    return { emp: String(emp).trim().toUpperCase(), dev: localStorage.getItem('device_id') || '' };
+  }
+  function headers() { var c = creds(); return { 'Content-Type': 'application/json', 'x-employee-number': c.emp, 'x-device-id': c.dev }; }
+  function log(s) { var el = document.getElementById('log'); el.textContent += s + '\n'; el.scrollTop = el.scrollHeight; }
+  async function handle(m) {
+    if (m.type === 'projects') {
+      var r = await fetch('/api/projects', { headers: headers() }); var d = await r.json();
+      if (!r.ok || !d.ok) throw new Error(d.error || ('HTTP ' + r.status));
+      return { projects: d.projects || [], me: d.me };
+    }
+    if (m.type === 'upload') {
+      if (!m.project_id || !m.filename || !m.blob) throw new Error('upload の内容が不足');
+      var r1 = await fetch('/api/design-docs', { method: 'POST', headers: headers(), body: JSON.stringify({ project_id: m.project_id, filename: m.filename }) });
+      var d1 = await r1.json(); if (!r1.ok || !d1.ok) throw new Error(d1.error || ('HTTP ' + r1.status));
+      var put = await fetch(d1.signedUrl, { method: 'PUT', headers: { 'Content-Type': 'application/pdf', 'x-upsert': 'true' }, body: m.blob });
+      if (!put.ok) throw new Error(m.filename + ' の保存に失敗（' + put.status + '）');
+      log('保存: ' + m.filename);
+      return { path: d1.path };
+    }
+    if (m.type === 'meta') {
+      var r2 = await fetch('/api/design-docs', { method: 'POST', headers: headers(), body: JSON.stringify({ project_id: m.project_id, meta: m.meta || {} }) });
+      var d2 = await r2.json(); if (!r2.ok || !d2.ok) throw new Error(d2.error || ('HTTP ' + r2.status));
+      return { ok: true };
+    }
+    throw new Error('不明な依頼: ' + m.type);
+  }
+  var c = creds();
+  var who = document.getElementById('who');
+  if (c.emp && c.dev) who.innerHTML = '<span class="ok">型知ログイン中: ' + c.emp.replace(/[<>&]/g, '') + '</span>';
+  else who.innerHTML = '<span class="ng">型知にログインしていません。</span> <a href="/" target="_blank">型知を開いてログイン</a>してから、FileForce でもう一度ブックマークを押してください。';
+  function ready(target) { try { target.postMessage({ type: 'ready', logged_in: !!(c.emp && c.dev), employee: c.emp }, ALLOWED); } catch (e) {} }
+  window.addEventListener('message', function (ev) {
+    if (ev.origin !== ALLOWED) return;
+    var m = ev.data || {};
+    if (m.type === 'hello') { ready(ev.source); return; }
+    if (!m.id) return;
+    handle(m).then(function (res) { ev.source.postMessage({ id: m.id, ok: true, res: res }, ev.origin); })
+      .catch(function (e) { log('失敗: ' + e.message); ev.source.postMessage({ id: m.id, ok: false, error: e.message }, ev.origin); });
+  });
+  if (window.opener) ready(window.opener);
+})();
+</script>
+</body></html>
