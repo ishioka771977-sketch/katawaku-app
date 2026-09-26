@@ -5,8 +5,9 @@
 // 設計書  : Supabase Storage の private バケット design-docs に <project_id>/<ファイル名>.pdf で保管。
 //           一度誰かが登録すれば、次から現場代理人は「工事を選ぶ」だけで同じ設計書を使える。
 //           表は増やさない（Storage の一覧が正）。読み書きは service_role・署名付きURLで行う。
-// FileForce: Drive マウント／API とも自動取得は現状不可（2026-09-25 検証）。
-//            代理人には「FileForceを開く（保存したフォルダのURL）」を案内し、ダウンロードしたPDFを登録してもらう。
+// FileForce: Drive マウント／公式API は不可（仕様書非公開・2026-09-25/26 検証）。代わりに
+//            ブックマークレット（/ff-import.js）が FileForce Web の画面用APIでPDFを取り、
+//            型知の小窓（/ff-bridge.html・端末認証）経由でここへ登録する。人の操作は「フォルダを開いて1クリック」。
 // ============================================================
 const { sb } = require('./store');
 

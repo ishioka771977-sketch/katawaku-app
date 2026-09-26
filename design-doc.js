@@ -170,11 +170,39 @@
     } catch (e) { box.innerHTML = `<span style="color:#c0392b">設計図書の確認に失敗: ${escapeHtml(e.message)}</span>` + manualPickerHtml(); bindManualPicker(); }
   }
 
+  // FileForce の画面で動くブックマークレット（ff-import.js を読み込む。型知の小窓 ff-bridge.html を先に開く）
+  function bookmarkletUrl() {
+    const o = location.origin;
+    return `javascript:(function(){window.__ktBridge=window.open('${o}/ff-bridge.html','kt_bridge','width=460,height=380');var s=document.createElement('script');s.src='${o}/ff-import.js?'+Date.now();document.body.appendChild(s)})()`;
+  }
+  // 他のタブ（FileForce）から戻ってきたとき、登録済み一覧だけ静かに更新する（選択中のページは触らない）
+  let _refreshing = false;
+  async function refreshDocs() {
+    if (_refreshing || !state.projectId || state.pages.length) return;
+    const m = document.getElementById('ddModal'); if (!m || m.style.display === 'none' || !document.getElementById('ddDocs')) return;
+    _refreshing = true;
+    try {
+      const res = await fetch('/api/design-docs?project_id=' + encodeURIComponent(state.projectId), { headers: sessionHeaders() });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        const before = state.docs.files.map((f) => f.name + f.updated_at).join('|');
+        const after = (data.files || []).map((f) => f.name + f.updated_at).join('|');
+        if (before !== after) { state.docs = { files: data.files || [], fileforce_url: data.fileforce_url || null }; state.docsMsg = 'FileForceからの登録を反映しました。'; renderDocs(); }
+      }
+    } catch (e) { /* 静かに */ } finally { _refreshing = false; }
+  }
+  window.addEventListener('focus', refreshDocs);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshDocs(); });
+
   function manualPickerHtml() {
     return `<div style="margin-top:8px"><label class="btn btn-warning" style="cursor:pointer">📂 自分でPDFを選ぶ<input type="file" id="ddFiles" accept="application/pdf" multiple style="display:none"></label>
-      <span style="color:#666;font-size:12px;margin-left:8px">複数選択OK。図面PDF（fig）は必ず含めてください。</span></div>`;
+      <span style="color:#666;font-size:12px;margin-left:8px">複数選択OK。図面PDF（fig）は必ず含めてください。</span>
+      <div id="ddDropManual" style="margin-top:6px;padding:10px;border:2px dashed #c9a86a;border-radius:8px;background:#fdfaf3;text-align:center;color:#7a5c1e;font-size:12px">📥 ここにPDFをドロップ／貼り付け（登録せずに読むだけ）</div></div>`;
   }
-  function bindManualPicker() { const inp = document.getElementById('ddFiles'); if (inp) inp.addEventListener('change', (e) => loadFiles([...e.target.files])); }
+  function bindManualPicker() {
+    const inp = document.getElementById('ddFiles'); if (inp) inp.addEventListener('change', (e) => loadFiles([...e.target.files]));
+    bindDropZone(document.getElementById('ddDropManual'), (files) => loadFiles(files));
+  }
 
   function renderDocs() {
     const box = document.getElementById('ddDocs');
@@ -191,11 +219,48 @@
         <a class="btn" href="${escapeHtml(ff)}" target="_blank" rel="noopener" style="background:#34495e;color:#fff">🗂 FileForceを開く</a>
         <label class="btn btn-warning" style="cursor:pointer">📂 自分でPDFを選ぶ（登録しない）<input type="file" id="ddFiles" accept="application/pdf" multiple style="display:none"></label>
       </div>
+      <div id="ddDrop" style="margin-top:8px;padding:14px;border:2px dashed #7fb3d5;border-radius:8px;background:#f8fbfd;text-align:center;color:#2c5d80;font-size:13px;cursor:pointer">📥 ここにPDFをドロップ（FileForce Drive のフォルダからそのままドラッグ／コピーして貼り付けも可）→ この工事の設計図書として登録します</div>
       <div style="margin-top:6px;font-size:12px;color:#666">FileForceの場所: <input id="ddFfUrl" type="text" value="${escapeHtml(d.fileforce_url || '')}" placeholder="app2.fileforce.jp/f/#folder/… を貼ると次から直接開けます" style="width:60%;font-size:12px"> <button class="btn btn-sm" onclick="DesignDoc.saveFfUrl()">保存</button></div>
+      <div style="margin-top:8px;padding:8px 10px;background:#f4f8fb;border-radius:6px;font-size:12px;color:#444;line-height:1.7">
+        <b>🗂 FileForceから直接取り込む</b>（ダウンロード不要）: FileForceで設計図書のフォルダ（◎入札契約関係／公告番号）を開き、ブックマークバーの「📐 型知に取り込む」を押す → 出てきた窓で工事を確認して「型知に登録する」。登録が終わるとこの画面に反映されます。
+        <div style="margin-top:4px">はじめて使うときは、このボタンをブックマークバーへドラッグして登録: <a href="${escapeHtml(bookmarkletUrl())}" onclick="alert('クリックではなく、ブックマークバーへドラッグして登録してください。\\n（ブックマークバーが無いときは Ctrl+Shift+B で表示）');return false" style="display:inline-block;padding:3px 10px;background:#2c3e50;color:#fff;border-radius:4px;text-decoration:none;font-weight:bold">📐 型知に取り込む</a></div>
+      </div>
       <div id="ddDocsMsg" style="margin-top:4px;color:#666;font-size:12px">${escapeHtml(state.docsMsg || '')}</div>`;
     document.getElementById('ddUpload').addEventListener('change', (e) => uploadDocs([...e.target.files]));
     bindManualPicker();
+    bindDropZone(document.getElementById('ddDrop'), (files) => uploadDocs(files), () => document.getElementById('ddUpload').click());
   }
+
+  // ドロップ／貼り付け → PDF群（Explorer・Finder・FileForce Drive からのドラッグ、Ctrl+V の貼り付けに対応）
+  function pdfFilesFrom(dt) {
+    const out = [];
+    if (dt && dt.items) { for (const it of dt.items) { if (it.kind === 'file') { const f = it.getAsFile(); if (f) out.push(f); } } }
+    else if (dt && dt.files) out.push(...dt.files);
+    return out.filter((f) => /\.pdf$/i.test(f.name) || f.type === 'application/pdf');
+  }
+  function bindDropZone(zone, onFiles, onClick) {
+    if (!zone) return;
+    const on = (e) => { e.preventDefault(); e.stopPropagation(); zone.style.background = '#e3f1fb'; };
+    const off = (e) => { e.preventDefault(); e.stopPropagation(); zone.style.background = '#f8fbfd'; };
+    zone.addEventListener('dragenter', on); zone.addEventListener('dragover', on); zone.addEventListener('dragleave', off);
+    zone.addEventListener('drop', (e) => { off(e); const files = pdfFilesFrom(e.dataTransfer); if (files.length) onFiles(files); else zone.textContent = 'PDF ファイルをドロップしてください'; });
+    if (onClick) zone.addEventListener('click', onClick);
+  }
+  // 貼り付け（Ctrl+V / ⌘V）: モーダルが開いていて工事を選んでいれば登録、未選択なら読むだけ
+  document.addEventListener('paste', (e) => {
+    const m = document.getElementById('ddModal'); if (!m || m.style.display === 'none') return;
+    if (/^(INPUT|TEXTAREA)$/.test((e.target && e.target.tagName) || '')) return;
+    const files = pdfFilesFrom(e.clipboardData); if (!files.length) return;
+    e.preventDefault();
+    if (state.projectId && document.getElementById('ddDrop')) uploadDocs(files); else loadFiles(files);
+  });
+  // モーダル全体へのドロップ（置き場の外に落としても拾う）
+  document.addEventListener('dragover', (e) => { const m = document.getElementById('ddModal'); if (m && m.style.display !== 'none' && m.contains(e.target)) e.preventDefault(); });
+  document.addEventListener('drop', (e) => {
+    const m = document.getElementById('ddModal'); if (!m || m.style.display === 'none' || !m.contains(e.target)) return;
+    e.preventDefault(); const files = pdfFilesFrom(e.dataTransfer); if (!files.length) return;
+    if (state.projectId && document.getElementById('ddDrop')) uploadDocs(files); else loadFiles(files);
+  });
 
   async function uploadDocs(files) {
     files = files.filter((f) => /\.pdf$/i.test(f.name));
