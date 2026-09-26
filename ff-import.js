@@ -104,19 +104,22 @@
 
   // ---------- 工事の自動候補（フォルダ名と工事名の共通部分） ----------
   function norm(s) { return String(s || '').replace(/^[\d０-９.\-_\s◎○〇【】\[\]]+/, '').replace(/[\s　]/g, ''); }
-  function lcs(a, b) {
-    var best = 0, prev = [];
-    for (var i = 0; i < a.length; i++) { var cur = []; for (var j = 0; j < b.length; j++) { cur[j] = a[i] === b[j] ? ((prev[j - 1] || 0) + 1) : 0; if (cur[j] > best) best = cur[j]; } prev = cur; }
-    return best;
+  var STOP = ['工事', '年度', '地区', '線外', '橋梁', '修繕', '維持', '一般', '国道', '町道', '道路', '補修', '関係', '契約', '入札', '設計', '図面'];
+  function lcs(a, b) { // 最長共通部分文字列（長さと文字列）
+    var best = 0, end = 0, prev = [];
+    for (var i = 0; i < a.length; i++) { var cur = []; for (var j = 0; j < b.length; j++) { cur[j] = a[i] === b[j] ? ((prev[j - 1] || 0) + 1) : 0; if (cur[j] > best) { best = cur[j]; end = i + 1; } } prev = cur; }
+    return { len: best, str: a.slice(end - best, end) };
   }
-  function guessProject(pathSegs, projects) {
+  function guessProject(pathSegs, projects) { // 「宿野部」→「宿野辺橋…」のように2文字でも固有の語なら当てる（工事・年度などの一般語は除く）
     var best = null, score = 0;
     projects.forEach(function (p) {
       var pn = norm(p.project_name);
-      pathSegs.forEach(function (seg) { var s = lcs(norm(seg), pn); if (s > score) { score = s; best = p; } });
+      pathSegs.forEach(function (seg) { var r = lcs(norm(seg), pn); var s = r.len >= 3 ? r.len : (r.len === 2 && STOP.indexOf(r.str) < 0 ? 2 : 0); if (s > score) { score = s; best = p; } });
     });
-    return score >= 3 ? best : null;
+    return score >= 2 ? best : null;
   }
+  // 設計図書らしいファイル（fig/tokki/suuryou/sankou/list・図面・特記・数量）だけ最初からチェック。様式や公告は外す
+  function isDesignDoc(name) { return /^(fig|tokki|suuryou|sankou|list)\d*|図面|特記|数量|設計|構造|配筋|一般図|参考/i.test(name || ''); }
 
   // ---------- 画面 ----------
   var css = 'position:fixed;top:24px;right:24px;width:520px;max-height:85vh;overflow:auto;background:#fff;color:#222;z-index:2147483000;box-shadow:0 8px 32px rgba(0,0,0,.35);border-radius:10px;font:14px/1.6 -apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",Meiryo,sans-serif;';
@@ -152,9 +155,9 @@
     body.innerHTML =
       '<div style="font-size:12px;color:#666;margin-bottom:6px">フォルダ: ' + esc(pathSegs.join(' / ') || folderId) + '</div>' +
       '<div style="margin-bottom:8px">① 工事: <select id="ktProject" style="font-size:14px;max-width:360px">' + opts + '</select>' + (guess ? ' <span style="font-size:12px;color:#27ae60">← フォルダ名から推定</span>' : '') + '</div>' +
-      '<div>② 取り込む設計図書（PDF ' + pdfs.length + '件' + (others ? '・PDF以外 ' + others + '件は対象外' : '') + '）</div>' +
+      '<div>② 取り込む設計図書（PDF ' + pdfs.length + '件' + (others ? '・PDF以外 ' + others + '件は対象外' : '') + '）<span style="font-size:12px;color:#666">　図面・特記・数量らしいものに最初からチェックが入ります</span></div>' +
       '<div style="max-height:34vh;overflow:auto;border:1px solid #ddd;border-radius:6px;padding:6px 8px;margin:4px 0 8px">' +
-      (pdfs.length ? pdfs.map(function (f, i) { var big = f.size > 45 * 1024 * 1024; return '<label style="display:block;font-size:13px' + (big ? ';color:#999' : '') + '"><input type="checkbox" class="ktFile" data-i="' + i + '"' + (big ? ' disabled' : ' checked') + '> ' + esc(f.name) + ' <span style="color:#888;font-size:11px">' + (f.size ? (f.size / 1048576).toFixed(1) + 'MB' : '') + (big ? '（50MB超は対象外）' : '') + '</span></label>'; }).join('') : '<span style="color:#e67e22">このフォルダに PDF がありません。設計図書のあるフォルダ（◎入札契約関係/公告番号 など）を開いてください。</span>') +
+      (pdfs.length ? pdfs.map(function (f, i) { var big = f.size > 45 * 1024 * 1024; return '<label style="display:block;font-size:13px' + (big ? ';color:#999' : '') + '"><input type="checkbox" class="ktFile" data-i="' + i + '"' + (big ? ' disabled' : (isDesignDoc(f.name) ? ' checked' : '')) + '> ' + esc(f.name) + ' <span style="color:#888;font-size:11px">' + (f.size ? (f.size / 1048576).toFixed(1) + 'MB' : '') + (big ? '（50MB超は対象外）' : '') + '</span></label>'; }).join('') : '<span style="color:#e67e22">このフォルダに PDF がありません。設計図書のあるフォルダ（◎入札契約関係/公告番号 など）を開いてください。</span>') +
       '</div>' +
       '<div style="display:flex;gap:8px;align-items:center"><button id="ktGo" style="background:#27ae60;color:#fff;border:0;border-radius:6px;padding:8px 14px;font-size:14px;cursor:pointer"' + (pdfs.length ? '' : ' disabled') + '>③ 型知に登録する</button><label style="font-size:12px"><input type="checkbox" id="ktAll"> 全部にチェック</label><span style="font-size:12px;color:#666">ログイン: ' + esc(user.employee || '') + '</span></div>' +
       '<div id="ktStatus" style="margin-top:8px;color:#555;white-space:pre-wrap;font-size:13px"></div>';
